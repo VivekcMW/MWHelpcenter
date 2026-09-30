@@ -574,11 +574,118 @@ async function linkPublishedDocuments(snapshot) {
   console.log('This command only links drafts; it does not publish them.')
 }
 
+function preparePublishedDocument(document, id, overrides = {}) {
+  const content = {...document}
+  delete content._id
+  delete content._rev
+  delete content._createdAt
+  delete content._updatedAt
+  return {...content, ...overrides, _id: id}
+}
+
+async function promoteDraft(client, draftId, publishedId, overrides = {}) {
+  const draft = await client.fetch('*[_id == $id][0]', {id: draftId})
+  if (!draft) {
+    const alreadyPublished = await client.fetch('*[_id == $id][0]._id', {id: publishedId})
+    if (alreadyPublished) return 'already-published'
+    throw new Error(`Cannot publish: both draft ${draftId} and published document ${publishedId} are missing.`)
+  }
+  const alreadyPublished = await client.fetch('*[_id == $id][0]._id', {id: publishedId})
+  if (alreadyPublished) throw new Error(`Refusing to overwrite existing published document ${publishedId}.`)
+  const published = preparePublishedDocument(draft, publishedId, overrides)
+  await client.transaction()
+    .createOrReplace(published)
+    .delete(draftId)
+    .commit()
+  return 'published'
+}
+
+async function publishAll(snapshot) {
+  if (!process.argv.includes('--confirm-admin-approval')) {
+    throw new Error('Publishing is blocked. Admin must explicitly confirm by passing --confirm-admin-approval after reviewing the drafts.')
+  }
+  const projectId = process.env.SANITY_PROJECT_ID?.trim()
+  const dataset = process.env.SANITY_DATASET?.trim()
+  if (projectId !== 'vjmj7stb' || dataset !== 'helpcenterdevelopment') {
+    throw new Error('Refusing publication outside project vjmj7stb dataset helpcenterdevelopment.')
+  }
+  const client = createClient({projectId, dataset, apiVersion: '2025-02-19', useCdn: false, token: requiredEnv('SANITY_MIGRATION_TOKEN'), perspective: 'raw'})
+  const classification = classifyPages(snapshot)
+  const expectedArticleIds = classification.articles.map((page) => `confluence-article-${page.id}`)
+  const expectedProductIds = classification.products.map((product) => PRODUCT_IDS.get(product.title))
+  const expectedCollectionIds = classification.products.map((product) => COLLECTION_IDS.get(product.title))
+  const expectedIds = [...expectedProductIds, ...expectedCollectionIds, ...expectedArticleIds]
+  const existingDocuments = await client.fetch('*[_id in $ids || _id in $draftIds]{_id,_type,body[]{_type,image{asset{_ref}}}}', {
+    ids: expectedIds,
+    draftIds: expectedIds.map((id) => `drafts.${id}`),
+  })
+  const existingIds = new Set(existingDocuments.map((document) => document._id))
+  const missingDocuments = expectedIds.filter((id) => !existingIds.has(id) && !existingIds.has(`drafts.${id}`))
+  if (missingDocuments.length) throw new Error(`Refusing to publish: ${missingDocuments.length} expected published/draft document(s) are missing.`)
+  const conflictingDocuments = expectedIds.filter((id) => existingIds.has(id) && existingIds.has(`drafts.${id}`))
+  if (conflictingDocuments.length) throw new Error(`Refusing to publish: ${conflictingDocuments.length} document(s) have both a published record and a draft.`)
+
+  const imageIds = [...new Set(existingDocuments.flatMap((document) => document.body || [])
+    .filter((block) => block._type === 'imageWithCaption')
+    .map((block) => block.image?.asset?._ref)
+    .filter(Boolean))]
+  const foundImages = imageIds.length ? await client.fetch('*[_id in $ids && _type == "sanity.imageAsset"]._id', {ids: imageIds}) : []
+  if (foundImages.length !== imageIds.length) throw new Error(`Refusing to publish: only ${foundImages.length}/${imageIds.length} referenced image assets resolve.`)
+
+  const report = {startedAt: new Date().toISOString(), dataset, adminConfirmed: true, published: {products: 0, collections: 0, articles: 0}, skippedAlreadyPublished: 0, completed: false}
+  const reportPath = join(exportDir, 'publish-report.json')
+  const saveProgress = async () => writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600})
+
+  for (const product of classification.products) {
+    const result = await promoteDraft(client, `drafts.${PRODUCT_IDS.get(product.title)}`, PRODUCT_IDS.get(product.title))
+    if (result === 'published') report.published.products += 1
+    else report.skippedAlreadyPublished += 1
+    await saveProgress()
+  }
+
+  for (const product of classification.products) {
+    const productId = PRODUCT_IDS.get(product.title)
+    const result = await promoteDraft(
+      client,
+      `drafts.${COLLECTION_IDS.get(product.title)}`,
+      COLLECTION_IDS.get(product.title),
+      {product: {_type: 'reference', _ref: productId}},
+    )
+    if (result === 'published') report.published.collections += 1
+    else report.skippedAlreadyPublished += 1
+    await saveProgress()
+  }
+
+  for (const page of classification.articles) {
+    const productId = PRODUCT_IDS.get(page.product)
+    const collectionId = COLLECTION_IDS.get(page.product)
+    const result = await promoteDraft(
+      client,
+      `drafts.confluence-article-${page.id}`,
+      `confluence-article-${page.id}`,
+      {
+        primaryCollection: {_type: 'reference', _ref: collectionId},
+        products: [{_type: 'reference', _ref: productId}],
+      },
+    )
+    if (result === 'published') report.published.articles += 1
+    else report.skippedAlreadyPublished += 1
+    if ((report.published.articles + report.skippedAlreadyPublished) % 10 === 0) await saveProgress()
+  }
+
+  report.completedAt = new Date().toISOString()
+  report.completed = true
+  await saveProgress()
+  console.log(`Published ${report.published.products} products, ${report.published.collections} collections, and ${report.published.articles} articles.`)
+  console.log(`Admin-confirmed publish report: ${reportPath}`)
+}
+
 async function main() {
   const command = process.argv[2] || 'dry-run'
   if (command === 'export') return exportSpace()
   const snapshot = await readSnapshot()
   if (command === 'link-published') return linkPublishedDocuments(snapshot)
+  if (command === 'publish') return publishAll(snapshot)
   const plan = buildDocuments(snapshot)
   const report = await writeDryRunReport(snapshot, plan)
   console.log(`Pages ${report.sourcePages}; products ${report.productDrafts}; collections ${report.collectionDrafts}; article drafts ${report.articleDrafts}.`)
@@ -586,7 +693,7 @@ async function main() {
   console.log(`Dry-run report: ${join(exportDir, 'dry-run-report.json')}`)
   if (command === 'dry-run') return
   if (command === 'import') return applyDraftImport(snapshot)
-  throw new Error('Usage: migrate-confluence.mjs export | dry-run | import --apply-drafts | link-published --apply-links')
+  throw new Error('Usage: migrate-confluence.mjs export | dry-run | import --apply-drafts | link-published --apply-links | publish --confirm-admin-approval')
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
@@ -596,4 +703,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   })
 }
 
-export {buildDocuments, buildDraftDocuments, classifyPages, parseConfluenceBody, slugify}
+export {buildDocuments, buildDraftDocuments, classifyPages, parseConfluenceBody, preparePublishedDocument, slugify}

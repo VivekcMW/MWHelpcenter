@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {buildDocuments, buildDraftDocuments, classifyPages, parseConfluenceBody, slugify} from '../scripts/migrate-confluence.mjs'
+import {buildDocuments, buildDraftDocuments, classifyPages, parseConfluenceBody, preparePublishedDocument, slugify} from '../scripts/migrate-confluence.mjs'
 
 describe('Confluence migration transformation', () => {
   it('maps headings, formatted paragraphs, lists, and nested tables to supported blocks', () => {
@@ -77,5 +77,27 @@ describe('Confluence migration transformation', () => {
   it('creates stable ASCII slugs for titles with punctuation or non-Latin text', () => {
     expect(slugify('View Network: External IDs')).toBe('view-network-external-ids')
     expect(slugify('日本語ガイド')).toBe('help-article')
+  })
+
+  it('promotes draft payloads to clean published IDs without weak refs or draft metadata', () => {
+    const draft = {
+      _id: 'drafts.confluence-article-42',
+      _rev: 'draft-rev',
+      _createdAt: '2026-09-30T00:00:00Z',
+      _type: 'article',
+      primaryCollection: {_type: 'reference', _ref: 'collection-1', _weak: true},
+      products: [{_type: 'reference', _ref: 'product-1', _weak: true}],
+    }
+
+    const published = preparePublishedDocument(draft, 'confluence-article-42', {
+      primaryCollection: {_type: 'reference', _ref: 'collection-1'},
+      products: [{_type: 'reference', _ref: 'product-1'}],
+    })
+
+    expect(published._id).toBe('confluence-article-42')
+    expect(published._rev).toBeUndefined()
+    expect(published._createdAt).toBeUndefined()
+    expect(published.primaryCollection._weak).toBeUndefined()
+    expect(published.products[0]._weak).toBeUndefined()
   })
 })
