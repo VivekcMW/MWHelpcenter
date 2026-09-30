@@ -10,11 +10,6 @@
   included_files = ["netlify/functions/build-server/**"]
   external_node_modules = ["react-router", "react", "react-dom", "@react-router/node"]
 
-# Configure esbuild for the server function
-[build.environment.esbuild]
-  format = "esm"
-  target = "esnext"
-
 # Environment variables (set these in Netlify UI or .env file)
 [env]
   [env.production]
