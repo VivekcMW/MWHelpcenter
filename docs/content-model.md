@@ -10,15 +10,16 @@ Schema-valid published documents are assumed by the TypeScript contract. A `clie
 
 ## Documents and web consumption
 
-All six document types include `language`; Studio and the web app support English (`en`) and Japanese (`ja`). CMS documents and demo catalogs are selected by locale, with no English-content fallback for missing Japanese content.
+All seven document types include `language`; Studio and the web app support English (`en`) and Japanese (`ja`). CMS documents and demo catalogs are selected by locale, with no English-content fallback for missing Japanese content.
 
 | Studio document | Fields and relationships | Public web use today |
 | --- | --- | --- |
-| `product` | `title`, `slug`, `description`, stable `icon` key, nonnegative integer `order`, `language` | Product cards and landing pages; sorted by order then title. The home page currently chooses icons by product slug, not the stored icon key. |
+| `homePage` | `language`, hero eyebrow/title/description, product goal shortcuts, featured product/collection/article references, resource cards with exactly one collection/search destination, optional SEO | Homepage sections are read from the localized page document when published; existing i18n content is the safe fallback until then. |
+| `product` | `title`, `slug`, `description`, stable `icon` key, nonnegative integer `order`, `language` | Product cards and landing pages; sorted by order then title. The home page uses the stored icon key. |
 | `collection` | `title`, `slug`, `description`, optional `product` reference, `language` | Collection landing page. Missing product means a shared collection; the public result flattens a linked product to `productSlug`. |
 | `article` | `title`, `slug`, `summary`, `language`, required `translationGroupId`, required `primaryCollection`, optional additional `collections`, one or more unique `products`, `contentType`, `body`, optional `reviewedAt`, `firstPublishedAt`, `seo` | Detail pages and summary lists; references become `collectionSlug`, `additionalCollectionSlugs`, and `productSlugs`. |
 | `author` | Public `name`, optional `bio`, optional `portrait` using `imageWithCaption`, `language` | Schema only: no article-author reference, public author query, or author page is wired up. This is not an authentication identity. |
-| `siteSettings` | `title`, `description`, `language`, up to six unique `featuredProducts` | Schema only: no settings query or singleton enforcement; current site chrome and featured layout are not driven by it. |
+| `siteSettings` | `title`, `description`, `language`, safe navigation destination/label entries, footer copy/support label, up to six unique `featuredProducts` | The root shell uses published locale settings for brand label, header links, and footer copy; Studio opens fixed `siteSettings-en`/`siteSettings-ja` IDs. |
 | `redirect` | Local absolute `from`/`to` paths, `statusCode` (301, 302, 307, 308), `language` | Missing article slugs resolve through published locale-scoped redirects. Self-targets are rejected; chain/loop checks and legacy-host routing remain future work. |
 
 Article `contentType` choices are `guide`, `faq`, `troubleshooting`, `overview`, and `best-practice`. These classify articles; they do not select separate rendering engines.

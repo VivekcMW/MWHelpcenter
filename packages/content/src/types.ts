@@ -27,6 +27,53 @@ export interface ContentRedirect {
   language: string
 }
 
+export interface SiteNavigationLink {
+  _key: string
+  label: string
+  destination: 'products' | 'getting-started' | 'best-practices'
+}
+
+export interface SiteSettings {
+  _id: string
+  title: string
+  description: string
+  language: string
+  navigationLinks: SiteNavigationLink[]
+  footerText?: string
+  footerNote?: string
+  supportLinkLabel?: string
+}
+
+export interface HomeResourceCard {
+  _key: string
+  title: string
+  description: string
+  linkLabel: string
+  icon: 'book' | 'support'
+  collectionSlug?: string
+  searchQuery?: string
+}
+
+export interface HomeTaskShortcut {
+  _key: string
+  label: string
+  productSlug: string
+}
+
+export interface HomePage {
+  _id: string
+  language: string
+  eyebrow: string
+  heroTitle: string
+  heroDescription: string
+  taskShortcuts: HomeTaskShortcut[]
+  featuredProductSlugs: string[]
+  featuredCollectionSlugs: string[]
+  featuredArticleSlugs: string[]
+  resources: HomeResourceCard[]
+  seo?: {title?: string; description?: string}
+}
+
 export interface ArticleSummary {
   _id: string
   title: string

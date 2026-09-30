@@ -14,6 +14,7 @@
     "build": "pnpm --filter @mw/web build && pnpm --filter @mw/studio build",
     "start": "pnpm --filter @mw/web start",
     "sanity:verify": "pnpm --filter @mw/web sanity:verify",
+    "sanity:seed-homepage": "pnpm --filter @mw/web sanity:seed-homepage",
     "confluence:migrate": "pnpm --filter @mw/web confluence:migrate",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",

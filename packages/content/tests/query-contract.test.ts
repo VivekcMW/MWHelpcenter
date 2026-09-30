@@ -38,7 +38,7 @@ describe('public query contract', () => {
   })
 
   it('locks down every public field whitelist', () => {
-    const fields = new Set(['_id', '_key', '_type', 'title', 'slug', 'description', 'icon', 'order', 'language', 'productSlug', 'summary', 'productSlugs', 'collectionSlug', 'additionalCollectionSlugs', 'contentType', 'reviewedAt', 'body', 'style', 'listItem', 'level', 'children', 'text', 'marks', 'markDefs', 'href', 'tone', 'image', 'asset', 'url', 'crop', 'top', 'bottom', 'left', 'right', 'hotspot', 'x', 'y', 'width', 'height', 'alt', 'caption', 'steps', 'columns', 'rows', 'cells', 'translationGroupId', 'seo', 'file', 'mimeType', 'originalFilename', 'size', 'video', 'poster', 'captions', 'label', 'transcript', 'audio', 'code', 'from', 'to', 'statusCode'])
+    const fields = new Set(['_id', '_key', '_type', 'title', 'slug', 'description', 'icon', 'order', 'language', 'productSlug', 'summary', 'productSlugs', 'collectionSlug', 'additionalCollectionSlugs', 'contentType', 'reviewedAt', 'body', 'style', 'listItem', 'level', 'children', 'text', 'marks', 'markDefs', 'href', 'tone', 'image', 'asset', 'url', 'crop', 'top', 'bottom', 'left', 'right', 'hotspot', 'x', 'y', 'width', 'height', 'alt', 'caption', 'steps', 'columns', 'rows', 'cells', 'translationGroupId', 'seo', 'file', 'mimeType', 'originalFilename', 'size', 'video', 'poster', 'captions', 'label', 'transcript', 'audio', 'code', 'from', 'to', 'statusCode', 'eyebrow', 'heroTitle', 'heroDescription', 'taskShortcuts', 'featuredProductSlugs', 'featuredCollectionSlugs', 'featuredArticleSlugs', 'resources', 'linkLabel', 'searchQuery', 'navigationLinks', 'destination', 'footerText', 'footerNote', 'supportLinkLabel'])
     for (const query of Object.values(queries)) {
       const projection = query.slice(query.indexOf('{'))
       const withoutPredicates = projection.replace(/defined\([^)]*\)\s*=>/g, '').replace(/_type\s*==\s*"[^"]+"\s*=>/g, '')
@@ -88,7 +88,33 @@ describe('search projection runtime contract', () => {
     { _id: 'collection', _type: 'collection', slug: { current: 'getting-started' } },
     { _id: 'shared-collection', _type: 'collection', slug: { current: 'best-practices' } },
     { _id: 'asset-id', _type: 'sanity.imageAsset', url: 'https://private-asset.test' },
+    { _id: 'home-en', _type: 'homePage', language: 'en', eyebrow: 'Knowledge hub', heroTitle: 'Find your answer', heroDescription: 'Search practical guides.', taskShortcuts: [{_key: 'task', label: 'Manage inventory', product: {_ref: 'inventory'}}], featuredProducts: [{_ref: 'inventory'}], featuredCollections: [{_ref: 'collection'}], featuredArticles: [{_ref: 'published-en'}], resources: [{_key: 'start', title: 'Start here', description: 'Learn the basics.', linkLabel: 'Start', icon: 'book', collection: {_ref: 'collection'}}, {_key: 'search', title: 'Troubleshooting', description: 'Find checks.', linkLabel: 'Search', icon: 'support', searchQuery: 'checks'}], seo: {title: 'Find answers'} },
+    { _id: 'home-ja', _type: 'homePage', language: 'ja', eyebrow: 'ナレッジ', heroTitle: '回答を探す', heroDescription: 'ガイドを検索。', taskShortcuts: [], featuredProducts: [], featuredCollections: [], featuredArticles: [], resources: [] },
+    { _id: 'drafts.home-en', _type: 'homePage', language: 'en', eyebrow: 'Draft', heroTitle: 'Draft title', heroDescription: 'Not public.', taskShortcuts: [], featuredProducts: [], featuredCollections: [], featuredArticles: [], resources: [] },
+    { _id: 'settings-en', _type: 'siteSettings', language: 'en', title: 'Moving Walls Help Center', description: 'Help articles.', navigationLinks: [{_key: 'products', label: 'Products', destination: 'products'}, {_key: 'start', label: 'Getting started', destination: 'getting-started'}], footerText: 'Every answer.', footerNote: 'OOH knowledge.', supportLinkLabel: 'Contact support', featuredProducts: [{_ref: 'inventory'}] },
+    { _id: 'settings-ja', _type: 'siteSettings', language: 'ja', title: 'ヘルプセンター', description: 'ヘルプ記事。', navigationLinks: [], footerText: '回答。', footerNote: 'ガイド。', supportLinkLabel: 'サポート', featuredProducts: [] },
+    { _id: 'versions.release.home-en', _type: 'homePage', language: 'en', eyebrow: 'Release', heroTitle: 'Release title', heroDescription: 'Not public.', taskShortcuts: [], featuredProducts: [], featuredCollections: [], featuredArticles: [], resources: [] },
   ]
+
+  it('evaluates the localized homepage projection and resolves only published references', async () => {
+    const result = await groq.evaluate(groq.parse(queries.HOME_PAGE_QUERY), {dataset, params: {language: 'en'}})
+    expect(await result.get()).toEqual({
+      _id: 'home-en', language: 'en', eyebrow: 'Knowledge hub', heroTitle: 'Find your answer', heroDescription: 'Search practical guides.',
+      taskShortcuts: [{_key: 'task', label: 'Manage inventory', productSlug: 'inventory'}],
+      featuredProductSlugs: ['inventory'], featuredCollectionSlugs: ['getting-started'], featuredArticleSlugs: ['guide'],
+      resources: [
+        {_key: 'start', title: 'Start here', description: 'Learn the basics.', linkLabel: 'Start', icon: 'book', collectionSlug: 'getting-started'},
+        {_key: 'search', title: 'Troubleshooting', description: 'Find checks.', linkLabel: 'Search', icon: 'support', searchQuery: 'checks'},
+      ], seo: {title: 'Find answers'},
+    })
+  })
+
+  it('evaluates localized site navigation/footer settings without falling back to another language', async () => {
+    const en = await groq.evaluate(groq.parse(queries.SITE_SETTINGS_QUERY), {dataset, params: {language: 'en'}})
+    const ja = await groq.evaluate(groq.parse(queries.SITE_SETTINGS_QUERY), {dataset, params: {language: 'ja'}})
+    expect(await en.get()).toMatchObject({title: 'Moving Walls Help Center', language: 'en', navigationLinks: [{label: 'Products', destination: 'products'}, {label: 'Getting started', destination: 'getting-started'}], footerText: 'Every answer.', featuredProductSlugs: ['inventory']})
+    expect(await ja.get()).toMatchObject({title: 'ヘルプセンター', language: 'ja', navigationLinks: [], footerText: '回答。', featuredProductSlugs: []})
+  })
 
   it.each(['en', 'ja'])('evaluates published %s filtering and every nested whitelist', async (language) => {
     const value = await groq.evaluate(groq.parse(queries.SEARCH_ARTICLES_QUERY), { dataset, params: { language } })

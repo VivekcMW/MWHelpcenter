@@ -8,6 +8,7 @@
     "build": "react-router build",
     "start": "react-router-serve ./build/server/index.js",
     "sanity:verify": "node ./scripts/verify-sanity.mjs",
+    "sanity:seed-homepage": "node ./scripts/seed-homepage-content.mjs",
     "confluence:migrate": "node ./scripts/migrate-confluence.mjs",
     "typecheck": "react-router typegen && tsc --noEmit"
   },

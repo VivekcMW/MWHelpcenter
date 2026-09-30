@@ -21,6 +21,7 @@ const labels = {
   },
 } as const
 
+type CmsNavigationLink = {_key: string; label: string; destination: 'products' | 'getting-started' | 'best-practices'}
 const routers = new Set<ReturnType<typeof createMemoryRouter>>()
 
 afterEach(() => {
@@ -29,11 +30,11 @@ afterEach(() => {
   routers.clear()
 })
 
-function setup(locale: Locale, suffix = '') {
+function setup(locale: Locale, suffix = '', navigationLinks?: CmsNavigationLink[]) {
   const i18n = createI18n(locale)
   const languageRequests: URL[] = []
   const router = createMemoryRouter([
-    { path: '*', element: <SiteHeader locale={locale} /> },
+    { path: '*', element: <SiteHeader locale={locale} navigationLinks={navigationLinks} title={navigationLinks ? 'CMS-configured help' : undefined} /> },
     {
       path: '/language',
       loader: ({ request }) => {
@@ -82,6 +83,24 @@ describe.each(['en', 'ja'] as const)('SiteHeader (%s)', (locale) => {
     { name: text.gettingStarted, suffix: '/collections/getting-started' },
     { name: text.bestPractices, suffix: '/collections/best-practices' },
   ]
+
+  test('renders ordered CMS navigation labels and safe locale-aware destinations', () => {
+    const links: CmsNavigationLink[] = [
+      {_key: 'best', label: 'Good practice', destination: 'best-practices'},
+      {_key: 'products', label: 'Explore products', destination: 'products'},
+      {_key: 'start', label: 'Begin here', destination: 'getting-started'},
+    ]
+    const {header, desktop, mobile} = setup(locale, '/articles/example', links)
+    const expected = [
+      ['Good practice', `/${locale}/collections/best-practices`],
+      ['Explore products', `/${locale}#products`],
+      ['Begin here', `/${locale}/collections/getting-started`],
+    ]
+    expect(within(header).getByRole('link', {name: 'CMS-configured help'}).getAttribute('href')).toBe(`/${locale}`)
+    for (const nav of [desktop, mobile]) {
+      expect(within(nav).getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')])).toEqual(expected)
+    }
+  })
 
   test('renders localized navigation without a Contact Support navbar action', async () => {
     const setupResult = setup(locale, '/articles/example')

@@ -50,6 +50,25 @@ const bodyFields = `_key, _type,
   _type == "simpleTable" => {caption, columns, rows[]{_key, _type, cells}}`
 
 export const PRODUCTS_QUERY = `*[_type == "product" && ${visible}] | order(order asc, title asc){${productFields}}`
+export const HOME_PAGE_QUERY = `*[_type == "homePage" && ${visible}][0]{
+  _id, language, eyebrow, heroTitle, heroDescription,
+  "taskShortcuts": coalesce(taskShortcuts[]{_key, label, "productSlug": product->slug.current}, []),
+  "featuredProductSlugs": coalesce(featuredProducts[]->slug.current, []),
+  "featuredCollectionSlugs": coalesce(featuredCollections[]->slug.current, []),
+  "featuredArticleSlugs": coalesce(featuredArticles[]->slug.current, []),
+  "resources": coalesce(resources[]{_key, title, description, linkLabel, icon,
+    defined(collection->slug.current) => {"collectionSlug": collection->slug.current},
+    defined(searchQuery) => {searchQuery}
+  }, []),
+  defined(seo) => {seo{defined(title) => {title}, defined(description) => {description}}}
+}`
+export const SITE_SETTINGS_QUERY = `*[_type == "siteSettings" && ${visible}][0]{
+  _id, title, description, language,
+  "navigationLinks": coalesce(navigationLinks[]{_key, label, destination}, []),
+  defined(footerText) => {footerText}, defined(footerNote) => {footerNote},
+  defined(supportLinkLabel) => {supportLinkLabel},
+  "featuredProductSlugs": coalesce(featuredProducts[]->slug.current, [])
+}`
 export const PRODUCT_QUERY = `*[_type == "product" && ${visible} && slug.current == $slug][0]{${productFields}}`
 export const COLLECTIONS_QUERY = `*[_type == "collection" && ${visible}] | order(title asc){${collectionFields}}`
 export const COLLECTION_QUERY = `*[_type == "collection" && ${visible} && slug.current == $slug][0]{${collectionFields}}`

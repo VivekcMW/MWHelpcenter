@@ -60,8 +60,67 @@ export const author = defineType({
 export const siteSettings = defineType({
   name: 'siteSettings', title: 'Site settings', type: 'document', fields: [
     title, description, language,
+    defineField({name: 'navigationLinks', title: 'Primary navigation', type: 'array', of: [defineArrayMember({
+      name: 'navigationLink', type: 'object', fields: [
+        defineField({name: 'label', type: 'string', validation: (rule) => rule.required().max(60)}),
+        defineField({name: 'destination', type: 'string', options: {list: [
+          {title: 'Products section', value: 'products'},
+          {title: 'Getting started collection', value: 'getting-started'},
+          {title: 'Best practices collection', value: 'best-practices'},
+        ]}, validation: (rule) => rule.required()}),
+      ],
+    })], validation: (rule) => rule.max(3).custom((value) => {
+      const destinations = (value || []).map((item) => (item as {destination?: string}).destination).filter(Boolean)
+      return destinations.length === new Set(destinations).size ? true : 'Each navigation destination can appear only once.'
+    })}),
+    defineField({name: 'footerText', type: 'string', validation: (rule) => rule.max(160)}),
+    defineField({name: 'footerNote', type: 'string', validation: (rule) => rule.max(160)}),
+    defineField({name: 'supportLinkLabel', type: 'string', validation: (rule) => rule.max(60)}),
     defineField({name: 'featuredProducts', type: 'array', of: [defineArrayMember({type: 'reference', to: [{type: 'product'}]})], validation: (rule) => rule.unique().max(6).custom(sameLanguage)}),
   ],
+})
+
+export const homePage = defineType({
+  name: 'homePage', title: 'Home page', type: 'document',
+  fields: [
+    language,
+    defineField({name: 'eyebrow', type: 'string', validation: (rule) => rule.required().max(120)}),
+    defineField({name: 'heroTitle', type: 'string', validation: (rule) => rule.required().min(2).max(120)}),
+    defineField({name: 'heroDescription', type: 'text', rows: 3, validation: (rule) => rule.required().max(320)}),
+    defineField({name: 'taskShortcuts', title: 'Goal shortcuts', type: 'array', of: [defineArrayMember({
+      name: 'taskShortcut', type: 'object', fields: [
+        defineField({name: 'label', type: 'string', validation: (rule) => rule.required().max(80)}),
+        defineField({name: 'product', type: 'reference', to: [{type: 'product'}], options: {filter: ({document}) => ({filter: 'language == $language', params: {language: document.language ?? 'en'}})}, validation: (rule) => rule.required().custom(sameLanguage)}),
+      ],
+    })], validation: (rule) => rule.max(6).custom((value) => {
+      const refs = (value || []).map((item) => (item as {product?: {_ref?: string}}).product?._ref).filter(Boolean)
+      return refs.length === new Set(refs).size ? true : 'Each product can appear only once in goal shortcuts.'
+    })}),
+    defineField({name: 'featuredProducts', type: 'array', of: [defineArrayMember({type: 'reference', to: [{type: 'product'}], options: {filter: ({document}) => ({filter: 'language == $language', params: {language: document.language ?? 'en'}})}})], validation: (rule) => rule.unique().max(7).custom(sameLanguage)}),
+    defineField({name: 'featuredCollections', type: 'array', of: [defineArrayMember({type: 'reference', to: [{type: 'collection'}], options: {filter: ({document}) => ({filter: 'language == $language', params: {language: document.language ?? 'en'}})}})], validation: (rule) => rule.unique().max(6).custom(sameLanguage)}),
+    defineField({name: 'featuredArticles', type: 'array', of: [defineArrayMember({type: 'reference', to: [{type: 'article'}], options: {filter: ({document}) => ({filter: 'language == $language', params: {language: document.language ?? 'en'}})}})], validation: (rule) => rule.unique().max(6).custom(sameLanguage)}),
+    defineField({name: 'resources', type: 'array', of: [defineArrayMember({
+      name: 'resourceCard', type: 'object', fields: [
+        defineField({name: 'title', type: 'string', validation: (rule) => rule.required().max(100)}),
+        defineField({name: 'description', type: 'text', rows: 3, validation: (rule) => rule.required().max(320)}),
+        defineField({name: 'linkLabel', type: 'string', validation: (rule) => rule.required().max(80)}),
+        defineField({name: 'icon', type: 'string', options: {list: [{title: 'Book', value: 'book'}, {title: 'Support', value: 'support'}]}, validation: (rule) => rule.required()}),
+        defineField({name: 'collection', type: 'reference', to: [{type: 'collection'}], options: {filter: ({document}) => ({filter: 'language == $language', params: {language: document.language ?? 'en'}})}, validation: (rule) => rule.custom(sameLanguage)}),
+        defineField({name: 'searchQuery', type: 'string', validation: (rule) => rule.max(120)}),
+      ],
+      validation: (rule) => rule.custom((value) => {
+        const card = value as {collection?: {_ref?: string}; searchQuery?: string} | undefined
+        const hasCollection = Boolean(card?.collection?._ref)
+        const hasSearch = Boolean(card?.searchQuery?.trim())
+        return hasCollection !== hasSearch ? true : 'Choose exactly one destination: a collection or a search query.'
+      }),
+    })], validation: (rule) => rule.max(4)}),
+    defineField({name: 'seo', type: 'object', fields: [
+      defineField({name: 'title', type: 'string', validation: (rule) => rule.max(70)}),
+      defineField({name: 'description', type: 'text', rows: 2, validation: (rule) => rule.max(170)}),
+    ]}),
+  ],
+  preview: {select: {language: 'language'}, prepare: ({language: locale}) => ({title: `Home page (${locale || 'en'})`, subtitle: 'Localized singleton'})},
 })
 
 export const redirect = defineType({

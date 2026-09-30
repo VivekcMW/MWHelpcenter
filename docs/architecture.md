@@ -151,6 +151,8 @@ flowchart TD
 
 The Sanity branch describes the implemented integration path, not an already provisioned or authenticated service. The client uses `perspective: 'published'`, `useCdn: false`, and an optional server-only read token. Queries filter language and exclude `drafts.**` and `versions.**`; nested output fields are explicitly selected.
 
+The root loader reads locale-specific `siteSettings` for the header brand/navigation and footer. The home loader reads the localized `homePage` plus the catalog; its hero, task shortcuts, featured product/collection/article lists, and resource cards come from Sanity when that document is published. Missing homepage/settings records use localized UI fallbacks rather than blank content.
+
 `getCatalog` reads products, collections, and article summaries in parallel. Product and collection loaders find matching slugs and filter summaries in memory; they do not currently use the exported singular product/collection queries. The article loader fetches the full article and catalog for collection context and up to three related guides sharing products.
 
 Live reads go to the origin per request. Root HTML responses and crawler resources set `Cache-Control: no-store`; no application content cache, webhook invalidation, or hosted search index is configured. Subsequent origin reads therefore do not depend on a webhook to reflect unpublishing. This is not push refresh of an already open browser page. Images may still be delivered from Sanity's asset CDN; that is distinct from caching content queries.

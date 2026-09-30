@@ -4,6 +4,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse, 
 import { createI18n } from './i18n/instance'
 import { defaultLocale, isLocale, localeFromPath, localePath, locales } from './i18n/config'
 import { getEnv } from './lib/env.server'
+import { getSiteSettings } from './lib/content.server'
 import { SiteShell } from './components/layout/site-shell'
 import { LanguageSwitcher } from './components/ui/language-switcher'
 import { FeedbackToaster } from './components/ui/toaster'
@@ -18,12 +19,14 @@ import './styles/globals.css'
 import './styles/motion.css'
 import './styles/feedback.css'
 
-export function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ params }: LoaderFunctionArgs) {
   const env = getEnv()
+  const locale = isLocale(params.locale) ? params.locale : defaultLocale
   return {
-    locale: isLocale(params.locale) ? params.locale : defaultLocale,
+    locale,
     demo: env.CONTENT_MODE === 'demo',
     siteUrl: env.SITE_URL,
+    siteSettings: env.CONTENT_MODE === 'sanity' ? await getSiteSettings(locale) : null,
   }
 }
 

@@ -1,5 +1,5 @@
-import type { Article, ArticleSummary, Collection, ContentRedirect, Product } from '@mw/content'
-import { ARTICLE_QUERY, ARTICLES_QUERY, ARTICLE_TRANSLATIONS_QUERY, COLLECTIONS_QUERY, PRODUCTS_QUERY, REDIRECT_QUERY, SEARCH_ARTICLES_QUERY } from '@mw/content/queries'
+import type { Article, ArticleSummary, Collection, ContentRedirect, HomePage, Product, SiteSettings } from '@mw/content'
+import { ARTICLE_QUERY, ARTICLES_QUERY, ARTICLE_TRANSLATIONS_QUERY, COLLECTIONS_QUERY, HOME_PAGE_QUERY, PRODUCTS_QUERY, REDIRECT_QUERY, SEARCH_ARTICLES_QUERY, SITE_SETTINGS_QUERY } from '@mw/content/queries'
 import type { Locale } from '../i18n/config'
 import type { SearchArticle } from '../features/search/rank'
 import { getEnv } from './env.server'
@@ -24,6 +24,16 @@ export async function getCatalog(language: Locale) {
     client.fetch<ArticleSummary[]>(ARTICLES_QUERY, { language }),
   ])
   return { products, collections, articles }
+}
+
+export async function getHomePage(language: Locale): Promise<HomePage | null> {
+  if (getEnv().CONTENT_MODE === 'demo') return null
+  return getPublishedClient().fetch<HomePage | null>(HOME_PAGE_QUERY, {language})
+}
+
+export async function getSiteSettings(language: Locale): Promise<SiteSettings | null> {
+  if (getEnv().CONTENT_MODE === 'demo') return null
+  return getPublishedClient().fetch<SiteSettings | null>(SITE_SETTINGS_QUERY, {language})
 }
 
 // Kept separate so navigation/catalog consumers never fetch article bodies.
