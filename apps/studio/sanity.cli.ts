@@ -19,7 +19,7 @@ for (const relativePath of ['./.env', '../../.env']) {
 
 export default defineCliConfig({
   api: {
-    projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'mwhelpcenter',
-    dataset: process.env.SANITY_STUDIO_DATASET || 'development',
+    projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'vjmj7stb',
+    dataset: process.env.SANITY_STUDIO_DATASET || 'helpcenterdevelopment',
   },
 })

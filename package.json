@@ -13,6 +13,7 @@
     "dev:studio": "pnpm --filter @mw/studio dev",
     "build": "pnpm --filter @mw/web build && pnpm --filter @mw/studio build",
     "start": "pnpm --filter @mw/web start",
+    "sanity:verify": "pnpm --filter @mw/web sanity:verify",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "test": "vitest run",

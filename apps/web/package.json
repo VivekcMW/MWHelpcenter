@@ -7,6 +7,7 @@
     "dev": "react-router dev --host 127.0.0.1 --port 4320",
     "build": "react-router build",
     "start": "react-router-serve ./build/server/index.js",
+    "sanity:verify": "node ./scripts/verify-sanity.mjs",
     "typecheck": "react-router typegen && tsc --noEmit"
   },
   "dependencies": {

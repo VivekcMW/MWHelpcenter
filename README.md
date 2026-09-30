@@ -63,4 +63,5 @@ Not configured: enforced editorial approvals, draft preview, signed webhooks, ca
 - [Search behavior and offline verification](docs/search.md)
 - [Local article helpfulness, privacy, and operations](docs/helpfulness.md)
 - [Deployment, security, and launch gates](docs/deployment.md)
+- [Sanity integration and owner handoff](docs/sanity-integration.md)
 - [Migration plan](docs/migration.md)
