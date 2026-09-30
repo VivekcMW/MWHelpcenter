@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm build && mkdir -p netlify/functions/build-server && cp -v apps/web/build/server/index.js netlify/functions/build-server/ && ls -la netlify/functions/build-server/"
+  command = "pnpm build && node scripts/copy-server-build.cjs"
   publish = "apps/web/build/client"
   functions = "netlify/functions"
   node_bundler = "esbuild"
