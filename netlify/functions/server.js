@@ -98,47 +98,55 @@ async function loadBuild() {
   if (cachedBuild) return cachedBuild
   
   try {
+    const { fileURLToPath: fileURLToPathFn } = await import('url')
+    const { dirname: dirnameFn, resolve: resolveFn } = await import('path')
+    
     // On Netlify, the server build is copied to netlify/functions/build-server/
-    // by the build command. Try that path first.
+    // by the build command. This script is at netlify/functions/server.mjs
     
     const cwd = process.cwd()
-    console.log(`[${new Date().toISOString()}] CWD: ${cwd}`)
+    const scriptFileUrl = import.meta.url  // file:///var/task/netlify/functions/server.mjs
+    const scriptPath = fileURLToPathFn(scriptFileUrl)  // /var/task/netlify/functions/server.mjs
+    const scriptDir = dirnameFn(scriptPath)  // /var/task/netlify/functions
     
-    // Get the directory where this script is located
-    const scriptDir = new URL('.', import.meta.url).href
+    console.log(`[${new Date().toISOString()}] Script path: ${scriptPath}`)
     console.log(`[${new Date().toISOString()}] Script dir: ${scriptDir}`)
+    console.log(`[${new Date().toISOString()}] CWD: ${cwd}`)
     
     // Try different possible paths for the build
     const possiblePaths = [
-      // Production: build-server copied into same directory as script
-      new URL('./build-server/index.js', import.meta.url).href,
-      // Production: build-server in parent directory
-      new URL('../netlify/functions/build-server/index.js', import.meta.url).href,
-      // Development: path from monorepo root
-      `file://${cwd}/apps/web/build/server/index.js`,
-      // Fallback: try finding based on current location
-      `file://${new URL('../../apps/web/build/server/index.js', scriptDir).href.replace('file://', '')}`,
+      // Path 1: build-server folder in the same directory as this script
+      resolveFn(scriptDir, 'build-server', 'index.js'),
+      // Path 2: from monorepo root
+      resolveFn(cwd, 'apps', 'web', 'build', 'server', 'index.js'),
+      // Path 3: try relative to task root
+      resolveFn('/var/task', 'netlify', 'functions', 'build-server', 'index.js'),
+      // Path 4: try in task root
+      resolveFn('/var/task', 'apps', 'web', 'build', 'server', 'index.js'),
     ]
+    
+    // Also create file:// URLs for import
+    const possibleFileUrls = possiblePaths.map(p => `file://${p}`)
     
     let buildModule = null
     let lastError = null
     
-    for (const path of possiblePaths) {
+    for (const fileUrl of possibleFileUrls) {
       try {
-        console.log(`[${new Date().toISOString()}] Attempting to load build from: ${path}`)
-        buildModule = await import(path)
-        console.log(`[${new Date().toISOString()}] Successfully loaded build from: ${path}`)
+        console.log(`[${new Date().toISOString()}] Attempting to load build from: ${fileUrl}`)
+        buildModule = await import(fileUrl)
+        console.log(`[${new Date().toISOString()}] Successfully loaded build from: ${fileUrl}`)
         cachedBuild = buildModule
         return buildModule
       } catch (err) {
         lastError = err
-        console.log(`[${new Date().toISOString()}] Failed: ${err.message}`)
+        console.log(`[${new Date().toISOString()}] Failed to load: ${err.message}`)
         continue
       }
     }
     
     // If we get here, none worked - provide helpful error info
-    const errorMsg = `Unable to load React Router build from any path:\n${possiblePaths.map(p => `  - ${p}`).join('\n')}\n\nLast error: ${lastError?.message}\n\nCWD: ${cwd}\nScript: ${scriptDir}`
+    const errorMsg = `Unable to load React Router build from any path:\n${possibleFileUrls.map(p => `  - ${p}`).join('\n')}\n\nLast error: ${lastError?.message}\n\nCWD: ${cwd}\nScriptPath: ${scriptPath}\nScriptDir: ${scriptDir}`
     console.error(`[${new Date().toISOString()}] ${errorMsg}`)
     throw new Error(errorMsg)
   } catch (error) {
