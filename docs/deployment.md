@@ -101,7 +101,7 @@ Do not add proxy/edge caching that overrides this behavior without a freshness d
 - [x] Configure production runtime variables; align web and Studio to the Sanity project. No Sanity token is required for the current public dataset.
 - [x] Import the Helpdesk content and verify the live site renders published content without the demo banner.
 - [x] Convert the 28 unsupported macros and 20 flagged table structures to supported rich content; decode visible HTML entities in 134 published articles.
-- [ ] Complete Admin editorial review of the 384 imported image alt texts and decide the four duplicate candidate pairs (three exact text/asset matches, one near-duplicate requiring product review).
+- [ ] Complete Admin editorial review of the 384 imported image alt texts and decide whether to merge the remaining near-duplicate installation guides (`CMS Installations Guide Android and Windows` vs `Installations Guide for Android and Windows`).
 - [ ] Decide whether/when to add reviewed Japanese translations; the current source export contained English articles only.
 - [ ] Test the real draft/publish boundary: drafts and release versions remain absent, publishing appears, edits are withheld until published, and unpublishing removes content from detail/list/search/sitemap responses.
 - [ ] Verify Sanity failures do not fall back to samples. Exercise invalid configuration, empty datasets, unavailable origin, missing slugs, and unsupported locales.
