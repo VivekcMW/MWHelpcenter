@@ -46,6 +46,7 @@ jobs:
         uses: nwtgck/actions-netlify@v3
         with:
           publish-dir: 'apps/web/build/client'
+          functions-dir: 'apps/web/.netlify/v1/functions'
           production-branch: main
           production-deploy: ${{ github.ref == 'refs/heads/main' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
