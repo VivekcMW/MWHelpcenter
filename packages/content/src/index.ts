@@ -1,2 +1,2 @@
-export type {Product, Collection, ArticleSummary, Article, PortableTextBlock, Callout, ImageWithCaption, Procedure, SimpleTable} from './types'
+export type {Product, Collection, ArticleSummary, Article, PortableTextBlock, Callout, ImageWithCaption, SanityFileAsset, AnimatedImageWithCaption, VideoCaptionTrack, VideoWithCaption, AudioWithTranscript, DownloadableFile, Procedure, SimpleTable} from './types'
 export {PRODUCTS_QUERY, COLLECTIONS_QUERY, ARTICLES_QUERY, ARTICLE_QUERY, PRODUCT_QUERY, COLLECTION_QUERY} from './queries'

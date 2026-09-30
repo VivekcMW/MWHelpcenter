@@ -91,6 +91,8 @@ function safeFilename(value) {
   return String(value).replace(/[^a-zA-Z0-9._-]+/g, '_').replace(/^\.+/, '').slice(0, 180) || 'attachment'
 }
 
+const ANIMATED_IMAGE_MIMES = new Set(['image/gif', 'image/webp', 'image/apng'])
+
 async function exportSpace() {
   await mkdir(assetsDir, {recursive: true})
   const pages = await fetchPaged('/rest/api/content?spaceKey=Helpdesk&type=page&status=current&limit=100&expand=ancestors,body.storage,metadata.labels,version')
@@ -253,6 +255,16 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
     const alt = attribute(node, 'alt') || attribute(node, 'title') || ''
     if (!alt) warnings.push(`Image needs human-written alt text (${filename}): ${pageTitle} (${pageId})`)
     const caption = plainText($(node).find('caption').first().html() || '').slice(0, 320)
+    if (ANIMATED_IMAGE_MIMES.has(attachment.mediaType?.toLowerCase())) {
+      body.push({
+        _key: key('i'),
+        _type: 'animatedImageWithCaption',
+        file: {_type: 'file', asset: {_type: 'reference', _ref: assetId}},
+        alt: (alt || `Animated image from ${pageTitle}: ${filename}`).slice(0, 250),
+        ...(caption ? {caption} : {}),
+      })
+      return
+    }
     body.push({
       _key: key('i'),
       _type: 'imageWithCaption',
@@ -476,7 +488,8 @@ async function applyDraftImport(snapshot) {
     if (!attachment.localName) throw new Error(`Missing exported asset filename for ${attachment.id}.`)
     const fullPath = resolve(assetsDir, attachment.localName)
     if (!fullPath.startsWith(`${resolve(assetsDir)}${sep}`)) throw new Error('Unsafe local asset path in migration snapshot.')
-    const type = attachment.mediaType?.startsWith('image/') ? 'image' : 'file'
+    const mimeType = attachment.mediaType?.toLowerCase()
+    const type = mimeType?.startsWith('image/') && !ANIMATED_IMAGE_MIMES.has(mimeType) ? 'image' : 'file'
     const uploaded = await client.assets.upload(type, createReadStream(fullPath), {filename: attachment.title, contentType: attachment.mediaType})
     assetIds.set(attachment.id, uploaded._id)
     completed += 1

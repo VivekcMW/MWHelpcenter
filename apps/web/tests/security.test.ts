@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { safeHref, sanityImageUrl } from '../app/lib/security/urls'
+import { safeHref, sanityFileUrl, sanityImageUrl } from '../app/lib/security/urls'
 import { parseEnv } from '../app/lib/env.server'
 
 describe('safe content URLs', () => {
@@ -13,6 +13,13 @@ describe('safe content URLs', () => {
     expect(sanityImageUrl('https://evil.test/image.png')).toBeUndefined()
     expect(sanityImageUrl('http://cdn.sanity.io/images/id/test.png')).toBeUndefined()
     expect(sanityImageUrl('https://cdn.sanity.io/images/id/test.png')).toContain('w=1200')
+  })
+  it('allows files only from the managed Sanity file CDN and can force downloads', () => {
+    expect(sanityFileUrl('https://evil.test/files/project/id/video.mp4')).toBeUndefined()
+    expect(sanityFileUrl('http://cdn.sanity.io/files/project/id/video.mp4')).toBeUndefined()
+    expect(sanityFileUrl('https://cdn.sanity.io/images/project/id/video.mp4')).toBeUndefined()
+    expect(sanityFileUrl('https://cdn.sanity.io/files/project/id/video.mp4?secret=value#fragment')).toBe('https://cdn.sanity.io/files/project/id/video.mp4')
+    expect(sanityFileUrl('https://cdn.sanity.io/files/project/id/guide.pdf', true)).toBe('https://cdn.sanity.io/files/project/id/guide.pdf?dl=')
   })
 })
 

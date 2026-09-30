@@ -22,6 +22,28 @@ const bodyFields = `_key, _type,
       defined(hotspot) => {hotspot{x, y, width, height}}
     }, alt, defined(caption) => {caption}
   },
+  _type == "animatedImageWithCaption" => {
+    file{_type, asset->{_id, url, mimeType, originalFilename, size}}, alt,
+    defined(caption) => {caption}
+  },
+  _type == "videoWithCaption" => {
+    video{_type, asset->{_id, url, mimeType, originalFilename, size}},
+    title, defined(caption) => {caption}, defined(transcript) => {transcript},
+    poster{_type, asset->{_id, url},
+      defined(crop) => {crop{top, bottom, left, right}},
+      defined(hotspot) => {hotspot{x, y, width, height}}
+    },
+    captions[]{_key, language, label, file{_type, asset->{_id, url, mimeType, originalFilename, size}}}
+  },
+  _type == "audioWithTranscript" => {
+    audio{_type, asset->{_id, url, mimeType, originalFilename, size}},
+    title, defined(caption) => {caption}, transcript,
+    captions[]{_key, language, label, file{_type, asset->{_id, url, mimeType, originalFilename, size}}}
+  },
+  _type == "downloadableFile" => {
+    file{_type, asset->{_id, url, mimeType, originalFilename, size}},
+    title, defined(caption) => {caption}
+  },
   _type == "procedure" => {title, steps[]{_key, _type, title, description}},
   _type == "simpleTable" => {caption, columns, rows[]{_key, _type, cells}}`
 
@@ -38,7 +60,11 @@ export const SEARCH_ARTICLES_QUERY = `*[_type == "article" && ${visible}] | orde
     _type == "callout" => {title, text},
     _type == "procedure" => {title, steps[]{title, description}},
     _type == "simpleTable" => {caption, columns, rows[]{cells}},
-    _type == "imageWithCaption" => {caption}
+    _type == "imageWithCaption" => {caption},
+    _type == "animatedImageWithCaption" => {caption},
+    _type == "videoWithCaption" => {title, caption, transcript},
+    _type == "audioWithTranscript" => {title, caption, transcript},
+    _type == "downloadableFile" => {title, caption}
   }
 }`
 // Fetch up to two matches so the switcher can reject ambiguous translation groups.

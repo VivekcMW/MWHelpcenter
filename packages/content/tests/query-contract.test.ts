@@ -38,7 +38,7 @@ describe('public query contract', () => {
   })
 
   it('locks down every public field whitelist', () => {
-    const fields = new Set(['_id', '_key', '_type', 'title', 'slug', 'description', 'icon', 'order', 'language', 'productSlug', 'summary', 'productSlugs', 'collectionSlug', 'contentType', 'reviewedAt', 'body', 'style', 'listItem', 'level', 'children', 'text', 'marks', 'markDefs', 'href', 'tone', 'image', 'asset', 'url', 'crop', 'top', 'bottom', 'left', 'right', 'hotspot', 'x', 'y', 'width', 'height', 'alt', 'caption', 'steps', 'columns', 'rows', 'cells', 'translationGroupId', 'seo'])
+    const fields = new Set(['_id', '_key', '_type', 'title', 'slug', 'description', 'icon', 'order', 'language', 'productSlug', 'summary', 'productSlugs', 'collectionSlug', 'contentType', 'reviewedAt', 'body', 'style', 'listItem', 'level', 'children', 'text', 'marks', 'markDefs', 'href', 'tone', 'image', 'asset', 'url', 'crop', 'top', 'bottom', 'left', 'right', 'hotspot', 'x', 'y', 'width', 'height', 'alt', 'caption', 'steps', 'columns', 'rows', 'cells', 'translationGroupId', 'seo', 'file', 'mimeType', 'originalFilename', 'size', 'video', 'poster', 'captions', 'label', 'transcript', 'audio'])
     for (const query of Object.values(queries)) {
       const projection = query.slice(query.indexOf('{'))
       const withoutPredicates = projection.replace(/defined\([^)]*\)\s*=>/g, '').replace(/_type\s*==\s*"[^"]+"\s*=>/g, '')
@@ -56,6 +56,10 @@ describe('search projection runtime contract', () => {
     { _type: 'procedure', title: 'Procedure', steps: [{ _key: 'step-key', title: 'Step', description: 'Visible step', internal: 'private' }] },
     { _type: 'simpleTable', caption: 'Table caption', columns: ['Column'], rows: [{ _key: 'row-key', cells: ['Cell'], internal: 'private' }] },
     { _type: 'imageWithCaption', caption: 'Image caption', alt: 'private alt', image: { asset: { _ref: 'asset-id' } } },
+    { _type: 'animatedImageWithCaption', caption: 'Animation caption', alt: 'private animation alt', file: { asset: { _ref: 'gif-id' } } },
+    { _type: 'videoWithCaption', title: 'Video title', caption: 'Video caption', transcript: 'Visible video transcript', video: { asset: { _ref: 'video-id' } }, captions: [{ language: 'en', label: 'English', file: { asset: { _ref: 'vtt-id' } } }] },
+    { _type: 'audioWithTranscript', title: 'Audio title', caption: 'Audio caption', transcript: 'Visible audio transcript', audio: { asset: { _ref: 'audio-id' } } },
+    { _type: 'downloadableFile', title: 'Guide download', caption: 'Download caption', file: { asset: { _ref: 'file-id' } } },
   ]
   const expectedBody = [
     { _type: 'block', children: [{ _type: 'span', text: 'Visible linked text' }] },
@@ -63,6 +67,10 @@ describe('search projection runtime contract', () => {
     { _type: 'procedure', title: 'Procedure', steps: [{ title: 'Step', description: 'Visible step' }] },
     { _type: 'simpleTable', caption: 'Table caption', columns: ['Column'], rows: [{ cells: ['Cell'] }] },
     { _type: 'imageWithCaption', caption: 'Image caption' },
+    { _type: 'animatedImageWithCaption', caption: 'Animation caption' },
+    { _type: 'videoWithCaption', title: 'Video title', caption: 'Video caption', transcript: 'Visible video transcript' },
+    { _type: 'audioWithTranscript', title: 'Audio title', caption: 'Audio caption', transcript: 'Visible audio transcript' },
+    { _type: 'downloadableFile', title: 'Guide download', caption: 'Download caption' },
   ]
   const article = {
     _type: 'article', _id: 'published-en', language: 'en', title: 'Guide', slug: { current: 'guide' }, summary: 'Summary',

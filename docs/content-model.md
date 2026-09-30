@@ -36,17 +36,21 @@ Article `contentType` choices are `guide`, `faq`, `troubleshooting`, `overview`,
 
 ## Rich content → renderer mapping
 
-`richContent` is a Portable Text array. Its public `PortableTextBlock` union combines upstream text blocks with the four custom root object types. Rendering is in `apps/web/app/components/content/rich-content.tsx`.
+`richContent` is a Portable Text array. Its public `PortableTextBlock` union combines upstream text blocks with the eight custom root object types. Rendering is in `apps/web/app/components/content/rich-content.tsx`.
 
 | Schema member | Public shape | Rendered output |
 | --- | --- | --- |
 | `block` | Key, style, list metadata, explicit spans and link annotations | Portable Text paragraphs, H2/H3, quotes, bullet/number lists, strong/emphasis/code. H2/H3 anchors use `section-<block key>` and appear in article navigation. |
 | `callout` | `tone` (`info`, `tip`, `warning`), optional `title`, required `text` | An `aside`, optional strong title, paragraph, and tone class; no raw HTML. |
 | `imageWithCaption` | `image.asset` projected to ID/URL, optional crop/hotspot, required `alt`, optional `caption` | Lazy-loaded image in a figure, optional figcaption. Only HTTPS `cdn.sanity.io/images/` URLs are accepted; width/format parameters are added. Crop/hotspot data is projected but not applied by the current renderer. |
+| `animatedImageWithCaption` | Original GIF, animated WebP, or APNG file asset, required `alt`, optional `caption` | Renders the original HTTPS Sanity file asset without image transformations, preserving animation frames. Only `cdn.sanity.io/files/` is accepted. |
+| `videoWithCaption` | MP4/WebM/Ogg video file, required title, optional poster/caption, WebVTT caption tracks and/or transcript | Native `<video controls>` player with metadata preload, no autoplay, optional poster/tracks, and expandable transcript. Studio requires captions or a transcript. |
+| `audioWithTranscript` | MP3/MP4/Ogg/WAV/WebM/AAC audio file, required title and transcript, optional caption | Native `<audio controls>` player with expandable transcript. No autoplay. |
+| `downloadableFile` | File asset, required title, optional caption | Safe Sanity-hosted download link; arbitrary external asset hosts and protocols are rejected. |
 | `procedure` | Required `title`, 1–30 keyed steps with required title/description | Section with H2 anchor and ordered list of H3 step titles and text. The procedure title appears in article navigation. |
 | `simpleTable` | Required caption, 1–8 column headers, 1–50 rows of matching cell counts | Focusable scroll region, semantic table/caption, column-header cells with `scope="col"`. Cells contain text, not nested rich content. |
 
-Link annotations are checked in Studio and rechecked during rendering. The web helper permits HTTP(S), mailto, and safe relative/anchor links, rejecting dangerous protocols, protocol-relative URLs, control characters, and backslashes. Rejected link annotations render as text. Images with rejected URLs are omitted. React escapes text; arbitrary embedded HTML, iframes, and executable scripts are not supported body members.
+Link annotations are checked in Studio and rechecked during rendering. The web helper permits HTTP(S), mailto, and safe relative/anchor links, rejecting dangerous protocols, protocol-relative URLs, control characters, and backslashes. Rejected link annotations render as text. Image URLs are restricted to the Sanity image CDN; media/download URLs are restricted to the Sanity file CDN and checked against supported MIME types. Animated images use original file URLs, not transformed image URLs. Video has controls and captions/transcript support; audio requires a transcript. React escapes text; arbitrary embedded HTML, iframes, and executable scripts are not supported body members.
 
 When adding a body member, add its Studio schema, public union member, explicit nested projection, renderer, fixture, and tests together. Review accessibility and unknown/malformed input behavior; imported unsupported members must not be treated as automatically supported.
 

@@ -53,6 +53,63 @@ export interface ImageWithCaption {
   caption?: string
 }
 
+export interface SanityFileAsset {
+  _id: string
+  url: string
+  mimeType: string
+  originalFilename?: string
+  size?: number
+}
+
+export interface AnimatedImageWithCaption {
+  _key: string
+  _type: 'animatedImageWithCaption'
+  file: {_type: 'file'; asset: SanityFileAsset}
+  alt: string
+  caption?: string
+}
+
+export interface VideoCaptionTrack {
+  _key: string
+  language: string
+  label: string
+  file: {_type: 'file'; asset: SanityFileAsset}
+}
+
+export interface VideoWithCaption {
+  _key: string
+  _type: 'videoWithCaption'
+  video: {_type: 'file'; asset: SanityFileAsset}
+  title: string
+  poster?: {
+    _type: 'image'
+    asset: {_id: string; url: string}
+    crop?: {top: number; bottom: number; left: number; right: number}
+    hotspot?: {x: number; y: number; width: number; height: number}
+  }
+  caption?: string
+  captions?: VideoCaptionTrack[]
+  transcript?: string
+}
+
+export interface AudioWithTranscript {
+  _key: string
+  _type: 'audioWithTranscript'
+  audio: {_type: 'file'; asset: SanityFileAsset}
+  title: string
+  caption?: string
+  captions?: VideoCaptionTrack[]
+  transcript: string
+}
+
+export interface DownloadableFile {
+  _key: string
+  _type: 'downloadableFile'
+  file: {_type: 'file'; asset: SanityFileAsset}
+  title: string
+  caption?: string
+}
+
 export interface Procedure {
   _key: string
   _type: 'procedure'
@@ -70,7 +127,7 @@ export interface SimpleTable {
 
 // Portable Text permits custom root objects, not only standard text blocks.
 // Preserve the upstream block definition while covering every Studio body member.
-export type PortableTextBlock = (TextBlock & {_type: 'block'}) | Callout | ImageWithCaption | Procedure | SimpleTable
+export type PortableTextBlock = (TextBlock & {_type: 'block'}) | Callout | ImageWithCaption | AnimatedImageWithCaption | VideoWithCaption | AudioWithTranscript | DownloadableFile | Procedure | SimpleTable
 
 export interface Article extends ArticleSummary {
   body: PortableTextBlock[]

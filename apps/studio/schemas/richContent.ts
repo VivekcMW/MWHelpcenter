@@ -21,6 +21,69 @@ export const imageWithCaption = defineType({
   preview: {select: {title: 'alt', media: 'image'}},
 })
 
+// Keep animated image bytes intact: image URL transformations can strip animation.
+export const animatedImageWithCaption = defineType({
+  name: 'animatedImageWithCaption', title: 'Animated image (GIF/WebP/APNG)', type: 'object',
+  fields: [
+    defineField({name: 'file', title: 'Animated image file', type: 'file', options: {accept: 'image/gif,image/webp,image/apng'}, validation: (rule) => rule.required().assetRequired()}),
+    defineField({name: 'alt', title: 'Alternative text', type: 'string', validation: (rule) => rule.required().min(3).max(250)}),
+    defineField({name: 'caption', type: 'string', validation: (rule) => rule.max(320)}),
+  ],
+  preview: {select: {title: 'alt'}},
+})
+
+export const videoWithCaption = defineType({
+  name: 'videoWithCaption', title: 'Video', type: 'object',
+  fields: [
+    defineField({name: 'video', title: 'Video file', type: 'file', options: {accept: 'video/mp4,video/webm,video/ogg'}, validation: (rule) => rule.required().assetRequired()}),
+    defineField({name: 'title', type: 'string', validation: (rule) => rule.required().max(120)}),
+    defineField({name: 'poster', title: 'Poster image', type: 'image', options: {hotspot: true}}),
+    defineField({name: 'caption', type: 'string', validation: (rule) => rule.max(320)}),
+    defineField({name: 'captions', title: 'Caption tracks (.vtt)', type: 'array', of: [defineArrayMember({
+      name: 'captionTrack', type: 'object', fields: [
+        defineField({name: 'language', type: 'string', validation: (rule) => rule.required().max(16)}),
+        defineField({name: 'label', type: 'string', validation: (rule) => rule.required().max(64)}),
+        defineField({name: 'file', title: 'WebVTT file', type: 'file', options: {accept: 'text/vtt,.vtt'}, validation: (rule) => rule.required().assetRequired()}),
+      ],
+    })], validation: (rule) => rule.max(10)}),
+    defineField({name: 'transcript', type: 'text', rows: 5, validation: (rule) => rule.max(12000)}),
+  ],
+  validation: (rule) => rule.custom((value) => {
+    const video = value as {captions?: unknown[]; transcript?: string} | undefined
+    return !video || video.captions?.length || video.transcript?.trim()
+      ? true : 'Add captions or a transcript so the video is accessible without audio.'
+  }),
+  preview: {select: {title: 'title', media: 'poster'}},
+})
+
+export const audioWithTranscript = defineType({
+  name: 'audioWithTranscript', title: 'Audio', type: 'object',
+  fields: [
+    defineField({name: 'audio', title: 'Audio file', type: 'file', options: {accept: 'audio/mpeg,audio/mp4,audio/ogg,audio/wav,audio/webm'}, validation: (rule) => rule.required().assetRequired()}),
+    defineField({name: 'title', type: 'string', validation: (rule) => rule.required().max(120)}),
+    defineField({name: 'caption', type: 'string', validation: (rule) => rule.max(320)}),
+    defineField({name: 'captions', title: 'Caption tracks (.vtt)', type: 'array', of: [defineArrayMember({
+      name: 'captionTrack', type: 'object', fields: [
+        defineField({name: 'language', type: 'string', validation: (rule) => rule.required().max(16)}),
+        defineField({name: 'label', type: 'string', validation: (rule) => rule.required().max(64)}),
+        defineField({name: 'file', title: 'WebVTT file', type: 'file', options: {accept: 'text/vtt,.vtt'}, validation: (rule) => rule.required().assetRequired()}),
+      ],
+    })], validation: (rule) => rule.max(10)}),
+    defineField({name: 'transcript', type: 'text', rows: 6, validation: (rule) => rule.required().min(1).max(20000)}),
+  ],
+  preview: {select: {title: 'title'}},
+})
+
+export const downloadableFile = defineType({
+  name: 'downloadableFile', title: 'Downloadable file', type: 'object',
+  fields: [
+    defineField({name: 'file', title: 'File', type: 'file', validation: (rule) => rule.required().assetRequired()}),
+    defineField({name: 'title', type: 'string', validation: (rule) => rule.required().max(120)}),
+    defineField({name: 'caption', type: 'string', validation: (rule) => rule.max(320)}),
+  ],
+  preview: {select: {title: 'title'}},
+})
+
 export const procedure = defineType({
   name: 'procedure', title: 'Procedure', type: 'object',
   fields: [
@@ -68,6 +131,10 @@ export const richContent = defineType({
     }),
     defineArrayMember({type: 'callout'}),
     defineArrayMember({type: 'imageWithCaption'}),
+    defineArrayMember({type: 'animatedImageWithCaption'}),
+    defineArrayMember({type: 'videoWithCaption'}),
+    defineArrayMember({type: 'audioWithTranscript'}),
+    defineArrayMember({type: 'downloadableFile'}),
     defineArrayMember({type: 'procedure'}),
     defineArrayMember({type: 'simpleTable'}),
   ],

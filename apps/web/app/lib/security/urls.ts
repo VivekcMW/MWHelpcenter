@@ -18,3 +18,17 @@ export function sanityImageUrl(value: string) {
     return url.toString()
   } catch { return undefined }
 }
+
+export function sanityFileUrl(value: unknown, download = false): string | undefined {
+  if (typeof value !== 'string' || value !== value.trim()) return undefined
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:' || url.hostname !== 'cdn.sanity.io' || !url.pathname.startsWith('/files/')) return undefined
+    const segments = url.pathname.split('/').filter(Boolean)
+    if (segments.length < 4 || segments.some((segment) => segment === '.' || segment === '..')) return undefined
+    url.search = ''
+    url.hash = ''
+    if (download) url.searchParams.set('dl', '')
+    return url.toString()
+  } catch { return undefined }
+}
