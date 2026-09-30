@@ -1,26 +1,28 @@
-import { handleRequest, routes, assets, assetsBuildDirectory, basename, entry, future, isSpaMode, prerender, publicPath, routeDiscovery, ssr, allowedActionOrigins } from '../../../apps/web/build/server/index.js'
+// Lazy load the React Router build to avoid bundler issues
+let cachedBuild = null
 
-// Build object for React Router
-const build = {
-  handleRequest,
-  routes,
-  assets,
-  assetsBuildDirectory,
-  basename,
-  entry,
-  future,
-  isSpaMode,
-  prerender,
-  publicPath,
-  routeDiscovery,
-  ssr,
-  allowedActionOrigins,
+async function loadBuild() {
+  if (cachedBuild) return cachedBuild
+  
+  try {
+    // Dynamic import that esbuild won't try to resolve at compile time
+    // Using the __dirname equivalent in ESM
+    const buildModule = await import(new URL('../../../apps/web/build/server/index.js', import.meta.url).href)
+    cachedBuild = buildModule
+    return buildModule
+  } catch (error) {
+    console.error('Failed to load React Router build:', error.message, error.stack)
+    throw new Error(`Failed to load build: ${error.message}`)
+  }
 }
 
 export default async (event, context) => {
   try {
     // Log incoming request for debugging
     console.log(`[${new Date().toISOString()}] ${event.httpMethod} ${event.path}${event.rawQuery ? '?' + event.rawQuery : ''}`)
+
+    // Load the build at runtime
+    const build = await loadBuild()
 
     // Parse the request
     const rawPath = event.path || '/'
