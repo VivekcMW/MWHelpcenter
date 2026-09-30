@@ -64,30 +64,20 @@ export default async (event, context) => {
 
     if (!response) {
       console.error('No response from handleRequest')
-      return {
-        statusCode: 500,
-        body: 'Internal Server Error: No response from handler',
+      return new Response('Internal Server Error: No response from handler', {
+        status: 500,
         headers: { 'Content-Type': 'text/plain' },
-      }
+      })
     }
 
-    // Convert Response to Netlify format
-    const body = await response.text()
-    const responseHeaders = Object.fromEntries(response.headers)
-    
     console.log(`[${new Date().toISOString()}] Response status: ${response.status}`)
 
-    return {
-      statusCode: response.status || 200,
-      body,
-      headers: responseHeaders,
-      isBase64Encoded: false,
-    }
+    // Return the Response object directly - Netlify's new runtime expects Web API Response
+    return response
   } catch (error) {
     console.error(`[${new Date().toISOString()}] Server error:`, error)
-    return {
-      statusCode: 500,
-      body: `<html>
+    
+    const errorHtml = `<html>
 <head>
   <title>Server Error</title>
   <style>
@@ -105,9 +95,12 @@ export default async (event, context) => {
     <p><a href="/">Back to home</a></p>
   </div>
 </body>
-</html>`,
-      headers: { 'Content-Type': 'text/html' },
-    }
+</html>`
+    
+    return new Response(errorHtml, {
+      status: 500,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    })
   }
 }
 
