@@ -4,7 +4,7 @@
 
 ## Deployment status
 
-The repository includes local development/build scripts and a server-side Sanity integration. It does **not** establish a provisioned cloud project, authenticated Studio, configured hosting, or a successful live publish/unpublish test. All launch gates below require evidence from the actual target environment.
+Production is deployed at `https://mwhelpcenter.netlify.app` using the Netlify React Router adapter. On 2026-09-30, the live production function was verified in Sanity mode against public project `vjmj7stb`, dataset `helpcenterdevelopment`; published content routes returned HTTP 200 without the demo banner. `pnpm sanity:verify --require-content` reported 7 products, 7 collections, and 172 English articles. Japanese article content has not been migrated. These checks do not replace ongoing editorial review of migrated assets/macros/tables or an unpublish/rollback rehearsal.
 
 ## Runtime and commands
 
@@ -40,8 +40,8 @@ Studio's CLI reads existing shell values first, then its app `.env`, then the ro
 | --- | --- | --- |
 | `CONTENT_MODE` | `demo` | Only `demo` or `sanity`; explicitly choose `sanity` for real published content |
 | `SITE_URL` | `http://localhost:4320` | Plain HTTP(S) origin; no credentials, path beyond `/`, query, or fragment. Use the public HTTPS origin in production. |
-| `SANITY_PROJECT_ID` | Empty | Required in Sanity mode; must be a real project ID. Syntax validation alone cannot prove the project exists or access is authorized. |
-| `SANITY_DATASET` | `development` | Real dataset to read; accepted syntax is lowercase letters/digits/underscores/hyphens |
+| `SANITY_PROJECT_ID` | `vjmj7stb` for production | Required in Sanity mode; must be a real project ID. Syntax validation alone cannot prove the project exists or access is authorized. |
+| `SANITY_DATASET` | `helpcenterdevelopment` for production | Real dataset to read; accepted syntax is lowercase letters/digits/underscores/hyphens |
 | `SANITY_API_VERSION` | `2025-02-19` | Pinned API date (`YYYY-MM-DD`), not a token or dataset version |
 | `SANITY_READ_TOKEN` | Empty | Optional server-only least-privilege read token when dataset access requires it; no write/preview credential in client code |
 | `SUPPORT_EMAIL` | Empty | Optional approved public support email; blank displays a pending-configuration message |
@@ -53,10 +53,10 @@ The shared environment schema validates configuration with Zod and reports inval
 
 | Variable | Fallback when blank | Purpose |
 | --- | --- | --- |
-| `SANITY_STUDIO_PROJECT_ID` | `mwhelpcenter` | Public project identifier; replace with the real project ID |
-| `SANITY_STUDIO_DATASET` | `development` | Public dataset identifier; align with the intended environment |
+| `SANITY_STUDIO_PROJECT_ID` | `vjmj7stb` | Public project identifier |
+| `SANITY_STUDIO_DATASET` | `helpcenterdevelopment` | Public development dataset identifier |
 
-The example file intentionally leaves both values blank. `mwhelpcenter` satisfies project-ID syntax for local configuration/building only; it is not proof of provisioning, authentication, dataset creation, or successful publishing. `SANITY_STUDIO_*` values are browser-visible. **Never put tokens or secrets in them.** Studio editor authentication uses actual authorized project access, not the web server's read token.
+`SANITY_STUDIO_*` values are browser-visible. **Never put tokens or secrets in them.** Studio editor authentication uses actual authorized project access, not the web server's read token.
 
 ## Demo versus Sanity mode
 
@@ -96,11 +96,12 @@ Do not add proxy/edge caching that overrides this behavior without a freshness d
 
 ## Pending launch gates
 
-- [ ] Run `pnpm check` with the intended pnpm/Node versions and record results; verify the resulting production web server separately.
-- [ ] Provision or select the actual Sanity project/dataset, authenticate authorized editors, and confirm appropriate plan capabilities. Keep placeholder identifiers out of production.
-- [ ] Configure dataset visibility, least-privilege read access, membership/publishing permissions, and required Studio/browser origins. Verify unauthorized access is denied.
-- [ ] Supply target environment variables securely; align web and Studio datasets; inspect public bundles/responses/logs for accidental secret exposure.
-- [ ] Replace sample content with reviewed English documentation; verify taxonomy, assets, same-language references, and expected navigation destinations.
+- [x] Run `pnpm check` with the intended pnpm/Node versions and verify the production SSR deployment.
+- [x] Provision/select the Sanity project/dataset, authenticate Studio, and keep placeholders out of the production target.
+- [x] Configure production runtime variables; align web and Studio to the Sanity project. No Sanity token is required for the current public dataset.
+- [x] Import the Helpdesk content and verify the live site renders published content without the demo banner.
+- [ ] Complete Admin editorial review of the 384 imported image alt texts, 28 macro callouts, 20 complex-table callouts, and four possible duplicate pairs.
+- [ ] Decide whether/when to add reviewed Japanese translations; the current source export contained English articles only.
 - [ ] Test the real draft/publish boundary: drafts and release versions remain absent, publishing appears, edits are withheld until published, and unpublishing removes content from detail/list/search/sitemap responses.
 - [ ] Verify Sanity failures do not fall back to samples. Exercise invalid configuration, empty datasets, unavailable origin, missing slugs, and unsupported locales.
 - [ ] Verify final-host headers, canonical origin, robots behavior, sitemap, HTTPS, staging access restrictions, and appropriate security policy.
