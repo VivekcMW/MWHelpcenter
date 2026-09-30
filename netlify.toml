@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm build"
+  command = "pnpm build && cp -r apps/web/build/server netlify/functions/build-server"
   publish = "apps/web/build/client"
   functions = "netlify/functions"
   node_bundler = "esbuild"

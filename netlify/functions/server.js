@@ -5,14 +5,47 @@ async function loadBuild() {
   if (cachedBuild) return cachedBuild
   
   try {
-    // Dynamic import that esbuild won't try to resolve at compile time
-    // Using the __dirname equivalent in ESM
-    const buildModule = await import(new URL('../../../apps/web/build/server/index.js', import.meta.url).href)
-    cachedBuild = buildModule
-    return buildModule
+    // On Netlify, the server build is copied to netlify/functions/build-server/
+    // by the build command. Try that path first.
+    
+    const cwd = process.cwd()
+    console.log(`[${new Date().toISOString()}] CWD: ${cwd}`)
+    
+    // Try different possible paths for the build
+    const possiblePaths = [
+      // Production: build-server copied into functions directory
+      new URL('./build-server/index.js', import.meta.url).href,
+      // Development: relative path
+      new URL('../../../apps/web/build/server/index.js', import.meta.url).href,
+      // Absolute file paths
+      `file://${cwd}/netlify/functions/build-server/index.js`,
+      `file://${cwd}/apps/web/build/server/index.js`,
+    ]
+    
+    let buildModule = null
+    let lastError = null
+    
+    for (const path of possiblePaths) {
+      try {
+        console.log(`[${new Date().toISOString()}] Attempting to load build from: ${path}`)
+        buildModule = await import(path)
+        console.log(`[${new Date().toISOString()}] Successfully loaded build from: ${path}`)
+        cachedBuild = buildModule
+        return buildModule
+      } catch (err) {
+        lastError = err
+        console.log(`[${new Date().toISOString()}] Failed: ${err.message}`)
+        continue
+      }
+    }
+    
+    // If we get here, none worked - provide helpful error info
+    const errorMsg = `Unable to load React Router build from any path:\n${possiblePaths.map(p => `  - ${p}`).join('\n')}\n\nLast error: ${lastError?.message}\n\nCWD: ${cwd}\nENV: ${process.env.NODE_ENV}`
+    console.error(`[${new Date().toISOString()}] ${errorMsg}`)
+    throw new Error(errorMsg)
   } catch (error) {
-    console.error('Failed to load React Router build:', error.message, error.stack)
-    throw new Error(`Failed to load build: ${error.message}`)
+    console.error(`[${new Date().toISOString()}] Build load error:`, error.message)
+    throw error
   }
 }
 

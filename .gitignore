@@ -14,4 +14,4 @@ test-results/
 data/
 *.sqlite
 *.sqlite-shm
-*.sqlite-wal
+*.sqlite-walnetlify/functions/build-server/
