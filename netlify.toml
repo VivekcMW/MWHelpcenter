@@ -1,19 +1,25 @@
 [build]
   command = "pnpm --filter @mw/web build"
   publish = "apps/web/build/client"
-  environment = { NODE_VERSION = "22.23.3" }
+  functions = "apps/web/.netlify/v1/functions"
+
+[build.environment]
+  NODE_VERSION = "22.23.3"
 
 # Environment variables (set these in Netlify UI or .env file)
-[env]
-  [env.production]
+[context.production.environment]
     NODE_ENV = "production"
     CONTENT_MODE = "sanity"
+    SANITY_PROJECT_ID = "vjmj7stb"
+    SANITY_DATASET = "helpcenterdevelopment"
+    SANITY_API_VERSION = "2025-02-19"
+    SITE_URL = "https://mwhelpcenter.netlify.app"
 
-  [env.deploy-preview]
+[context.deploy-preview.environment]
     NODE_ENV = "production"
-    CONTENT_MODE = "sanity"
+    CONTENT_MODE = "demo"
 
-  [env.branch-deploy]
+[context.branch-deploy.environment]
     NODE_ENV = "development"
     CONTENT_MODE = "demo"
 
