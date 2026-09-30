@@ -6,9 +6,9 @@
   environment = { NODE_VERSION = "22.23.3" }
 
 [functions."server"]
-  node_bundler = "esbuild"
+  node_bundler = "none"
   included_files = ["netlify/functions/build-server/**"]
-  external_node_modules = ["react-router", "react", "react-dom", "@react-router/node"]
+  external_node_modules = ["react-router", "react", "react-dom"]
 
 # Environment variables (set these in Netlify UI or .env file)
 [env]
