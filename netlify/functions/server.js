@@ -87,10 +87,18 @@ export default async (event, context) => {
     })
 
     // Call the React Router handler
-    const response = await build.handleRequest(
+    // The React Router build exports entry.module.default which is the handleRequest function
+    const handler = build.entry?.module?.default
+    
+    if (typeof handler !== 'function') {
+      console.error('Handler not found in build exports. Available exports:', Object.keys(build))
+      throw new Error(`Invalid build structure: handler not found`)
+    }
+    
+    const response = await handler(
       request,
       200,
-      {},
+      new Headers(),
       {},
       {}
     )
