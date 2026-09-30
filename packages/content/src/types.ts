@@ -66,6 +66,13 @@ export interface HomePage {
   eyebrow: string
   heroTitle: string
   heroDescription: string
+  tasksTitle: string
+  tasksDescription?: string
+  productsTitle: string
+  productsDescription?: string
+  collectionsTitle?: string
+  featuredArticlesTitle?: string
+  resourcesTitle: string
   taskShortcuts: HomeTaskShortcut[]
   featuredProductSlugs: string[]
   featuredCollectionSlugs: string[]

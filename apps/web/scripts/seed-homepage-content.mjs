@@ -59,6 +59,13 @@ const homePage = {
   eyebrow: common.eyebrow,
   heroTitle: common.heroTitle,
   heroDescription: common.heroDescription,
+  tasksTitle: common.tasksTitle,
+  tasksDescription: common.tasksDescription,
+  productsTitle: common.productsTitle,
+  productsDescription: common.productsDescription,
+  collectionsTitle: common.topics,
+  featuredArticlesTitle: common.nextSteps,
+  resourcesTitle: common.resourcesTitle,
   taskShortcuts: Object.entries(taskProduct).map(([key, slug]) => ({
     _key: `task-${key}`,
     label: common.tasks[key],
@@ -91,16 +98,30 @@ const homePage = {
 }
 const documents = [homePage, settings]
 const ids = documents.map((document) => document._id)
-const existing = await client.fetch('*[_id in $ids || _id in $draftIds]{_id, _type}', {ids, draftIds: ids.map((id) => `drafts.${id}`)})
-const existingIds = new Set(existing.map((document) => document._id))
-const plan = documents.map((document) => ({id: document._id, type: document._type, exists: existingIds.has(document._id) || existingIds.has(`drafts.${document._id}`)}))
+const existing = await client.fetch('*[_id in $ids || _id in $draftIds]', {ids, draftIds: ids.map((id) => `drafts.${id}`)})
+const existingById = new Map(existing.filter((document) => !document._id.startsWith('drafts.')).map((document) => [document._id, document]))
+const draftIds = new Set(existing.filter((document) => document._id.startsWith('drafts.')).map((document) => document._id))
+const plan = documents.map((document) => {
+  const current = existingById.get(document._id)
+  const fieldsToSeed = current
+    ? Object.keys(document).filter((field) => !['_id', '_type'].includes(field) && current[field] === undefined)
+    : Object.keys(document).filter((field) => !['_id', '_type'].includes(field))
+  return {id: document._id, type: document._type, exists: Boolean(current), fieldsToSeed, hasDraft: draftIds.has(`drafts.${document._id}`)}
+})
 console.log(JSON.stringify({projectId, dataset, documents: plan, applyRequested: process.argv.includes('--apply-reviewed-content')}, null, 2))
 if (!process.argv.includes('--apply-reviewed-content')) {
   console.log('Dry run only. Re-run with --apply-reviewed-content to create these localized English homepage/settings documents if their singleton IDs remain unused.')
   process.exit(0)
 }
-if (existing.length) throw new Error('Refusing to overwrite an existing homepage or site-settings document; review it in Studio first.')
+if (plan.some((item) => item.hasDraft)) throw new Error('Refusing to update a homepage/settings document while a draft exists; resolve the Studio draft first.')
 let transaction = client.transaction()
-for (const document of documents) transaction = transaction.create(document)
+for (const document of documents) {
+  const current = existingById.get(document._id)
+  if (!current) transaction = transaction.create(document)
+  else {
+    const missingFields = Object.fromEntries(Object.entries(document).filter(([field]) => !['_id', '_type'].includes(field) && current[field] === undefined))
+    if (Object.keys(missingFields).length) transaction = transaction.patch(document._id, (draft) => draft.setIfMissing(missingFields))
+  }
+}
 await transaction.commit()
-console.log('Published the English Home page and Site settings documents.')
+console.log('Created missing English homepage/settings documents and seeded only missing fields on existing records.')

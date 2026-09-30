@@ -28,12 +28,12 @@ export async function getCatalog(language: Locale) {
 
 export async function getHomePage(language: Locale): Promise<HomePage | null> {
   if (getEnv().CONTENT_MODE === 'demo') return null
-  return getPublishedClient().fetch<HomePage | null>(HOME_PAGE_QUERY, {language})
+  return getPublishedClient().fetch<HomePage | null>(HOME_PAGE_QUERY, {language, id: `homePage-${language}`})
 }
 
 export async function getSiteSettings(language: Locale): Promise<SiteSettings | null> {
   if (getEnv().CONTENT_MODE === 'demo') return null
-  return getPublishedClient().fetch<SiteSettings | null>(SITE_SETTINGS_QUERY, {language})
+  return getPublishedClient().fetch<SiteSettings | null>(SITE_SETTINGS_QUERY, {language, id: `siteSettings-${language}`})
 }
 
 // Kept separate so navigation/catalog consumers never fetch article bodies.
@@ -66,7 +66,7 @@ export async function getArticleRedirect(language: Locale, from: string): Promis
   if (getEnv().CONTENT_MODE === 'demo') return null
   const result = await getPublishedClient().fetch<ContentRedirect | null>(REDIRECT_QUERY, {language, from})
   const safeLocalTarget = typeof result?.to === 'string' && /^\/(?!\/)[^?#\s\\]*$/.test(result.to) && !Array.from(result.to).some((character) => {
-    const code = character.charCodeAt(0)
+    const code = character.codePointAt(0) ?? 0
     return code < 32 || code === 127
   })
   if (result?.language !== language || result?.from !== from || !safeLocalTarget || ![301, 302, 307, 308].includes(result?.statusCode ?? 0)) return null

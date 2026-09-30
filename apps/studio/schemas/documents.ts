@@ -76,7 +76,6 @@ export const siteSettings = defineType({
     defineField({name: 'footerText', type: 'string', validation: (rule) => rule.max(160)}),
     defineField({name: 'footerNote', type: 'string', validation: (rule) => rule.max(160)}),
     defineField({name: 'supportLinkLabel', type: 'string', validation: (rule) => rule.max(60)}),
-    defineField({name: 'featuredProducts', type: 'array', of: [defineArrayMember({type: 'reference', to: [{type: 'product'}]})], validation: (rule) => rule.unique().max(6).custom(sameLanguage)}),
   ],
 })
 
@@ -87,6 +86,13 @@ export const homePage = defineType({
     defineField({name: 'eyebrow', type: 'string', validation: (rule) => rule.required().max(120)}),
     defineField({name: 'heroTitle', type: 'string', validation: (rule) => rule.required().min(2).max(120)}),
     defineField({name: 'heroDescription', type: 'text', rows: 3, validation: (rule) => rule.required().max(320)}),
+    defineField({name: 'tasksTitle', title: 'Goal shortcuts heading', type: 'string', validation: (rule) => rule.required().max(100)}),
+    defineField({name: 'tasksDescription', title: 'Goal shortcuts subheading', type: 'string', validation: (rule) => rule.max(160)}),
+    defineField({name: 'productsTitle', title: 'Products section heading', type: 'string', validation: (rule) => rule.required().max(100)}),
+    defineField({name: 'productsDescription', title: 'Products section subheading', type: 'string', validation: (rule) => rule.max(160)}),
+    defineField({name: 'collectionsTitle', title: 'Featured collections heading', type: 'string', validation: (rule) => rule.max(100)}),
+    defineField({name: 'featuredArticlesTitle', title: 'Featured articles heading', type: 'string', validation: (rule) => rule.max(100)}),
+    defineField({name: 'resourcesTitle', title: 'Resources section heading', type: 'string', validation: (rule) => rule.required().max(100)}),
     defineField({name: 'taskShortcuts', title: 'Goal shortcuts', type: 'array', of: [defineArrayMember({
       name: 'taskShortcut', type: 'object', fields: [
         defineField({name: 'label', type: 'string', validation: (rule) => rule.required().max(80)}),

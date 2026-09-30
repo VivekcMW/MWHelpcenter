@@ -22,9 +22,9 @@ function NavigationLinks({locale, links}: {readonly locale: Locale; readonly lin
   ]
   return <>{items.map((item) => {
     const to = item.destination === 'products' ? `${home}#products` : localePath(locale, `collections/${item.destination}`)
-    const current = item.destination === 'products'
-      ? productsCurrent
-      : pathname === localePath(locale, `collections/${item.destination}`) ? 'page' : undefined
+    let current: boolean | 'page' | 'location' | undefined
+    if (item.destination === 'products') current = productsCurrent
+    else if (pathname === localePath(locale, `collections/${item.destination}`)) current = 'page'
     return <Link key={item._key} to={to} aria-current={current}>{item.label}</Link>
   })}</>
 }

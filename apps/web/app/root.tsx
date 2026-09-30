@@ -1,6 +1,6 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
 import { I18nextProvider } from 'react-i18next'
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse, useRouteError, useRouteLoaderData, useLocation, type LoaderFunctionArgs } from 'react-router'
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse, useRouteError, useRouteLoaderData, useLocation, type LoaderFunctionArgs, type MetaFunction } from 'react-router'
 import { createI18n } from './i18n/instance'
 import { defaultLocale, isLocale, localeFromPath, localePath, locales } from './i18n/config'
 import { getEnv } from './lib/env.server'
@@ -28,6 +28,14 @@ export async function loader({ params }: LoaderFunctionArgs) {
     siteUrl: env.SITE_URL,
     siteSettings: env.CONTENT_MODE === 'sanity' ? await getSiteSettings(locale) : null,
   }
+}
+
+export const meta: MetaFunction<typeof loader> = ({loaderData: data}) => {
+  const t = createI18n(data?.locale ?? defaultLocale).t
+  return [
+    {title: data?.siteSettings?.title || t('siteTitle')},
+    {name: 'description', content: data?.siteSettings?.description || t('siteDescription')},
+  ]
 }
 
 export function headers() { return { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin' } }
