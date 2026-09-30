@@ -135,15 +135,24 @@ build.entry.module.default exists: ${!!build.entry?.module?.default}
     })
     
     // Prepare the router context with routes and other configuration from the build
+    // React Router v7 expects specific structure for routes
     const routerContext = {
-      routes: build.routes || {},
-      assets: build.assets || {},
+      routes: build.routes,
+      basename: build.basename || '',
       isSpaMode: build.isSpaMode || false,
+    }
+    
+    // Prepare load context for React Router handlers
+    const loadContext = {
+      // Netlify specific context
+      event,
+      context,
     }
     
     console.log(`[${new Date().toISOString()}] RouterContext prepared:`, {
       hasRoutes: !!routerContext.routes,
-      routeCount: Object.keys(routerContext.routes).length,
+      routeCount: Object.keys(routerContext.routes || {}).length,
+      hasBasename: !!routerContext.basename,
     })
     
     const responseHeaders = new Headers()
@@ -154,7 +163,7 @@ build.entry.module.default exists: ${!!build.entry?.module?.default}
       200,
       responseHeaders,
       routerContext,
-      {}
+      loadContext
     )
 
     if (!response) {
