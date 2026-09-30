@@ -12,6 +12,8 @@
   white-space: nowrap;
   border: 0;
 }
+.js-only { display: none; }
+html.js-enabled .js-only { display: inline-flex; }
 
 /* Real router pending state, never a fabricated percentage. Fixed positioning
    avoids layout shifts; the live announcement sits outside the busy main. */

@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse, useRouteError, useRouteLoaderData, useLocation, type LoaderFunctionArgs } from 'react-router'
 import { createI18n } from './i18n/instance'
@@ -35,12 +35,15 @@ export function Layout({ children }: { readonly children: ReactNode }) {
   const locale = localeFromPath(location.pathname)
   const i18n = useMemo(() => createI18n(locale), [locale])
   const canonical = data ? new URL(location.pathname, data.siteUrl).href : undefined
+  useEffect(() => {
+    document.documentElement.classList.add('js-enabled')
+    return () => document.documentElement.classList.remove('js-enabled')
+  }, [])
   return <html lang={locale} dir={locales.find((item) => item.code === locale)!.dir}>
     <head>
       <meta charSet="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <meta name="theme-color" content="#1D65AF" />
-      <noscript><style>{'.js-only { display: none !important; }'}</style></noscript>
       {(data?.demo || location.pathname.endsWith('/search')) && <meta name="robots" content="noindex, nofollow" />}
       {canonical && <link rel="canonical" href={canonical} />}
       <Meta /><Links />
