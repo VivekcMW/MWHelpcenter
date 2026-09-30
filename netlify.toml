@@ -1,14 +1,7 @@
 [build]
-  command = "pnpm build && node scripts/copy-server-build.cjs"
+  command = "pnpm --filter @mw/web build"
   publish = "apps/web/build/client"
-  functions = "netlify/functions"
-  node_bundler = "esbuild"
   environment = { NODE_VERSION = "22.23.3" }
-
-[functions."server"]
-  node_bundler = "none"
-  included_files = ["netlify/functions/build-server/**"]
-  external_node_modules = ["react-router", "react", "react-dom"]
 
 # Environment variables (set these in Netlify UI or .env file)
 [env]
@@ -23,17 +16,6 @@
   [env.branch-deploy]
     NODE_ENV = "development"
     CONTENT_MODE = "demo"
-
-# Serve static assets first, then fall back to function
-[[redirects]]
-  from = "/assets/*"
-  to = "/assets/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/server"
-  status = 200
 
 [[headers]]
   for = "/assets/*"

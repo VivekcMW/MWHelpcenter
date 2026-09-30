@@ -125,7 +125,7 @@ for (const browserConfig of browsers) {
       })
 
       const status = response ? response.status() : 'unknown'
-      const passed = status === 200
+  const passed = status === 200 && cssCheck.cssLoaded
 
       results.browsers[browserConfig.name].routes[route.name] = {
         status,

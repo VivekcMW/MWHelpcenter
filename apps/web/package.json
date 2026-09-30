@@ -30,6 +30,7 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@netlify/vite-plugin-react-router": "4.0.0",
     "@react-router/dev": "7.18.4",
     "@types/node": "^22.14.0",
     "@types/react": "^19.0.0",

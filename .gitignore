@@ -1,4 +1,5 @@
 node_modules/
+.netlify/
 .env
 .env.*
 !.env.example
@@ -14,4 +15,5 @@ test-results/
 data/
 *.sqlite
 *.sqlite-shm
-*.sqlite-walnetlify/functions/build-server/
+*.sqlite-wal
+netlify/functions/build-server/
