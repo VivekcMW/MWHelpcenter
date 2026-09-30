@@ -1,0 +1,20 @@
+{
+  "label": "Search help articles",
+  "placeholder": "Search a task, product, or question…",
+  "submit": "Search",
+  "title": "Find your next answer",
+  "description": "Search published titles, summaries, and guide content across the Moving Walls ecosystem.",
+  "queryLabel": "Results for “{{query}}”",
+  "resultCount_one": "{{count}} result",
+  "resultCount_other": "{{count}} results",
+  "noResults": "No matching guides. Try a product name or a shorter phrase.",
+  "clearProduct": "Search all products with these keywords",
+  "gettingStarted": "Explore getting started guides",
+  "support": "Get support",
+  "typoNotice": "Some results use similar spellings for your English keywords. Exact matches appear first.",
+  "typoResult": "Similar spelling match",
+  "emptyQuery": "Enter a question or keyword to get started.",
+  "productLabel": "Product",
+  "allProducts": "All products",
+  "tooLong": "Please keep your search to 200 characters or fewer."
+}

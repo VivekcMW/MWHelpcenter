@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+useNodeVersion: 22.23.3
+nodeVersion: 22.23.3
+onlyBuiltDependencies:
+  - esbuild
+  - sharp

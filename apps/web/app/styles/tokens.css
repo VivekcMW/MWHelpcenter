@@ -1,0 +1,160 @@
+/* Movingwalls foundations, adapted from tiktok-qc-tool/public/css/mw-tokens.css.
+   Keep source palette values stable; use semantic roles in components.
+   Poppins is self-hosted by @fontsource (see root.tsx). */
+:root {
+  --mw-primary-50: #EEF4FB;
+  --mw-primary-100: #D5E7F5;
+  --mw-primary-200: #ABCFEA;
+  --mw-primary-300: #72AFDA;
+  --mw-primary-400: #4192C9;
+  --mw-primary-500: #2878BC;
+  --mw-primary-600: #1D65AF;
+  --mw-primary-700: #165499;
+  --mw-primary-800: #104278;
+  --mw-primary-900: #0D325C;
+  --mw-primary-950: #071E38;
+
+  --mw-secondary-50: #FFF7ED;
+  --mw-secondary-100: #FFEDD5;
+  --mw-secondary-200: #FED7AA;
+  --mw-secondary-300: #FDBA74;
+  --mw-secondary-400: #FB923C;
+  --mw-secondary-500: #F97316;
+  --mw-secondary-600: #EA580C;
+  --mw-secondary-700: #C2410C;
+  --mw-secondary-800: #9A3412;
+  --mw-secondary-900: #7C2D12;
+  --mw-secondary-950: #431407;
+
+  --mw-flow-50: #F0FDFA;
+  --mw-flow-100: #CCFBF1;
+  --mw-flow-200: #99F6E4;
+  --mw-flow-300: #5EEAD4;
+  --mw-flow-400: #2DD4BF;
+  --mw-flow-500: #14B8A6;
+  --mw-flow-600: #0D9488;
+  --mw-flow-700: #0F766E;
+  --mw-flow-800: #115E59;
+  --mw-flow-900: #134E4A;
+  --mw-flow-950: #042F2E;
+
+  --mw-gray-50: #F9FAFB;
+  --mw-gray-100: #F3F4F6;
+  --mw-gray-200: #E5E7EB;
+  --mw-gray-300: #D1D5DB;
+  --mw-gray-400: #9CA3AF;
+  --mw-gray-500: #6B7280;
+  --mw-gray-600: #4B5563;
+  --mw-gray-700: #374151;
+  --mw-gray-800: #1F2937;
+  --mw-gray-900: #111827;
+  --mw-gray-950: #030712;
+
+  --mw-green-50: #F0FDF4;
+  --mw-green-100: #DCFCE7;
+  --mw-green-700: #15803D;
+  --mw-amber-50: #FFFBEB;
+  --mw-amber-100: #FEF3C7;
+  --mw-amber-700: #B45309;
+  --mw-red-50: #FEF2F2;
+  --mw-red-100: #FEE2E2;
+  --mw-red-700: #B91C1C;
+  --mw-sky-100: #E0F2FE;
+  --mw-sky-700: #0369A1;
+
+  --mw-font-sans: 'Poppins', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mw-font-mono: var(--mw-font-sans);
+  --mw-text-xs: 12px;
+  --mw-text-sm: 13px;
+  --mw-text-base: 14px;
+  --mw-text-lg: 18px;
+  --mw-text-xl: 24px;
+  --mw-text-2xl: 32px;
+  --mw-text-display: clamp(32px, 4.4vw, 52px);
+  --mw-weight-regular: 400;
+  --mw-weight-medium: 500;
+  --mw-weight-semibold: 600;
+  --mw-weight-bold: 700;
+  --mw-leading-heading: 1.25;
+  --mw-leading-body: 1.7;
+
+  --mw-space-1: 4px;
+  --mw-space-2: 8px;
+  --mw-space-3: 12px;
+  --mw-space-4: 16px;
+  --mw-space-5: 20px;
+  --mw-space-6: 24px;
+  --mw-space-8: 32px;
+  --mw-space-10: 40px;
+  --mw-space-12: 48px;
+  --mw-space-16: 64px;
+  --mw-radius: 6px;
+  --mw-radius-full: 9999px;
+  --mw-control-height: 44px;
+  --mw-content-width: 1180px;
+  --mw-reading-width: 760px;
+
+  --mw-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --mw-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --mw-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --mw-shadow-float: 0 8px 32px rgb(37 99 235 / 0.12);
+  --mw-duration-fast: 150ms;
+  --mw-duration-normal: 220ms;
+  --mw-duration-slow: 320ms;
+  --mw-duration-stagger: 40ms;
+  --mw-duration-feedback-delay: 120ms;
+  --mw-duration-progress: 1200ms;
+  --mw-duration-spin: 800ms;
+  --mw-motion-enter-distance: 8px;
+  --mw-motion-nudge: 2px;
+  --mw-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --mw-ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --mw-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Semantic roles: light theme, with accessible text on tinted surfaces. */
+  --mw-surface: #FFFFFF;
+  --mw-page-bg: var(--mw-gray-50);
+  --mw-text: var(--mw-gray-900);
+  --mw-text-muted: var(--mw-gray-600);
+  --mw-border: var(--mw-gray-200);
+  --mw-border-control: var(--mw-gray-500);
+  --mw-action: var(--mw-primary-600);
+  --mw-action-hover: var(--mw-primary-700);
+  --mw-on-action: var(--mw-surface);
+  --mw-focus: var(--mw-primary-600);
+  --mw-info-bg: var(--mw-primary-50);
+  --mw-info-text: var(--mw-primary-700);
+  --mw-tip-bg: var(--mw-flow-50);
+  --mw-tip-text: var(--mw-flow-700);
+  --mw-warning-bg: var(--mw-amber-50);
+  --mw-warning-text: var(--mw-amber-700);
+  --mw-danger-bg: var(--mw-red-50);
+  --mw-danger-text: var(--mw-red-700);
+
+  /* Compatibility aliases for the existing help-center layout API. */
+  --ink: var(--mw-text);
+  --muted: var(--mw-text-muted);
+  --line: var(--mw-border);
+  --surface: var(--mw-page-bg);
+  --accent: var(--mw-primary-50);
+  --radius: var(--mw-radius);
+  --max-width: var(--mw-content-width);
+
+  font-family: var(--mw-font-sans);
+  color: var(--mw-text);
+  background: var(--mw-page-bg);
+  font-synthesis: none;
+  color-scheme: light;
+
+  /* Feedback additions: reference toast borders, modal scrim and shimmer timing. */
+  --mw-green-200: #BBF7D0;
+  --mw-red-200: #FECACA;
+  --mw-amber-200: #FDE68A;
+  --mw-modal-backdrop: rgb(0 0 0 / 0.5);
+  --mw-duration-shimmer: 1400ms;
+}
+
+/* Keep Latin branding in Poppins; supply actual Japanese glyphs locally. */
+:root:lang(ja) {
+  --mw-font-sans: 'Poppins', 'Noto Sans JP Variable', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+}

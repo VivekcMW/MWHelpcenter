@@ -1,0 +1,108 @@
+/* Motion is progressive enhancement. No observer, hidden-content gate or JS
+   timers: pages remain readable without animation support or hydration.
+   Import last; movement is opt-in to the user's no-preference setting. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Real router pending state, never a fabricated percentage. Fixed positioning
+   avoids layout shifts; the live announcement sits outside the busy main. */
+.navigation-progress {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 3px;
+  z-index: 9;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--mw-primary-100);
+}
+.navigation-progress > span { display: block; height: 100%; background: var(--mw-action); }
+.search-spinner { flex-shrink: 0; }
+.search-form button[aria-busy=true] { cursor: progress; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* No forwards fill: finished entry transforms must not affect sticky TOCs,
+     card hover transforms, or create a persistent stacking context. */
+  .route-content, .error-page { animation: mw-page-enter var(--mw-duration-normal) var(--mw-ease-enter); }
+  .hero-content > * { animation: mw-rise-in var(--mw-duration-slow) var(--mw-ease-enter) backwards; }
+  .hero-content > :nth-child(2) { animation-delay: var(--mw-duration-stagger); }
+  .hero-content > :nth-child(3) { animation-delay: calc(var(--mw-duration-stagger) * 2); }
+  .hero-content > :nth-child(4) { animation-delay: calc(var(--mw-duration-stagger) * 3); }
+  .home-content > .section { animation: mw-rise-in var(--mw-duration-slow) var(--mw-ease-enter) backwards; }
+  .home-content > .section:nth-child(2) { animation-delay: var(--mw-duration-stagger); }
+  .home-content > .section:nth-child(3) { animation-delay: calc(var(--mw-duration-stagger) * 2); }
+  .mobile-toc[open] > a { animation: mw-page-enter var(--mw-duration-fast) var(--mw-ease-enter); }
+  .mobile-navigation[open] > nav { animation: mw-page-enter var(--mw-duration-fast) var(--mw-ease-enter); }
+
+  :is(.mw-btn, .button) {
+    transition: background-color var(--mw-duration-fast) var(--mw-ease-smooth), color var(--mw-duration-fast) var(--mw-ease-smooth), border-color var(--mw-duration-fast) var(--mw-ease-smooth), box-shadow var(--mw-duration-fast) var(--mw-ease-smooth), transform var(--mw-duration-fast) var(--mw-ease-smooth);
+  }
+  :is(.mw-btn, .button):active:not(:disabled):not([aria-busy=true]) { transform: translateY(1px); }
+  :is(.main-nav a, .side-nav a, .article-toc a, .breadcrumbs a, .topic-links a, .text-link, .site-footer a) {
+    transition: color var(--mw-duration-fast) var(--mw-ease-smooth), background-color var(--mw-duration-fast) var(--mw-ease-smooth), border-color var(--mw-duration-fast) var(--mw-ease-smooth);
+  }
+  .search-form {
+    transition: border-color var(--mw-duration-fast) var(--mw-ease-smooth), box-shadow var(--mw-duration-normal) var(--mw-ease-smooth);
+  }
+  .search-form:focus-within { box-shadow: var(--mw-shadow-float); }
+  .article-row { transition: background-color var(--mw-duration-fast) var(--mw-ease-smooth); }
+  :is(.button, .text-link, .topic-links a, .article-row, .side-nav a, .site-footer a) > .lucide:not(.search-spinner),
+  .task-arrow, .card-arrow, .product-icon {
+    transition: transform var(--mw-duration-fast) var(--mw-ease-smooth), color var(--mw-duration-fast) var(--mw-ease-smooth);
+  }
+  .main-nav a::after {
+    transform-origin: center;
+    transition: transform var(--mw-duration-fast) var(--mw-ease-smooth);
+  }
+  .main-nav a:focus-visible::after { transform: scaleX(1); }
+  .main-nav a:focus-visible { text-decoration: none; }
+
+  /* Touch users get press feedback, not sticky hover movement. */
+  @media (hover: hover) and (pointer: fine) {
+    .main-nav a:hover { text-decoration: none; }
+    .main-nav a:hover::after { transform: scaleX(1); }
+    .article-row:hover { background: var(--mw-primary-50); }
+    .product-card:hover .product-icon { transform: translateY(-2px); }
+    .product-card:hover .card-arrow { transform: translate(var(--mw-motion-nudge), calc(var(--mw-motion-nudge) * -1)); }
+    .task-card:hover .task-arrow,
+    :is(.text-link, .topic-links a, .side-nav a):hover > .lucide,
+    .article-row:hover > .lucide:last-child,
+    .button:not([aria-busy=true]):not(:disabled):hover > .lucide:not(.search-spinner) { transform: translateX(var(--mw-motion-nudge)); }
+  }
+
+  /* Delay only the decorative bar to avoid flicker on fast responses. */
+  .navigation-progress:not([hidden]) { animation: mw-progress-reveal var(--mw-duration-fast) linear var(--mw-duration-feedback-delay) backwards; }
+  .navigation-progress > span {
+    width: 35%;
+    animation: mw-progress-travel var(--mw-duration-progress) var(--mw-ease-smooth) infinite;
+  }
+  .search-spinner { animation: mw-spin var(--mw-duration-spin) linear infinite; }
+}
+
+@keyframes mw-page-enter { from { opacity: .65; } to { opacity: 1; } }
+@keyframes mw-rise-in {
+  from { opacity: .65; transform: translateY(var(--mw-motion-enter-distance)); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes mw-progress-reveal { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mw-progress-travel { from { transform: translateX(-100%); } to { transform: translateX(386%); } }
+@keyframes mw-spin { to { transform: rotate(360deg); } }
+
+/* Redundant by design with the global guard: this stylesheet is safe to reuse
+   on its own. Pending feedback remains a static bar and readable live text. */
+@media (prefers-reduced-motion: reduce) {
+  .route-content, .error-page, .hero-content > *, .home-content > .section,
+  .mobile-toc[open] > a, .mobile-navigation[open] > nav, .navigation-progress, .navigation-progress > span, .search-spinner {
+    animation: none;
+    transform: none;
+  }
+}

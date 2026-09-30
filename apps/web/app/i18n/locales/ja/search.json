@@ -1,0 +1,20 @@
+{
+  "label": "ヘルプ記事を検索",
+  "placeholder": "操作、製品、質問を検索…",
+  "submit": "検索",
+  "title": "知りたいことを見つけましょう",
+  "description": "Moving Walls エコシステム全体の公開記事のタイトル、概要、本文を検索できます。",
+  "queryLabel": "「{{query}}」の検索結果",
+  "resultCount_one": "{{count}} 件の検索結果",
+  "resultCount_other": "{{count}} 件の検索結果",
+  "noResults": "一致するガイドが見つかりませんでした。製品名や短いキーワードで検索してみてください。",
+  "clearProduct": "同じキーワードですべての製品を検索",
+  "gettingStarted": "はじめにのガイドを見る",
+  "support": "サポートを利用する",
+  "typoNotice": "英語のキーワードとつづりが似ている検索結果を含みます。完全に一致する結果を先に表示しています。",
+  "typoResult": "似たつづりの検索結果",
+  "emptyQuery": "質問やキーワードを入力して検索してください。",
+  "productLabel": "製品",
+  "allProducts": "すべての製品",
+  "tooLong": "検索語句は 200 文字以内で入力してください。"
+}

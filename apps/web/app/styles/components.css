@@ -1,0 +1,105 @@
+/* Movingwalls primitives. Existing help-center classes are compatibility aliases.
+   Import after tokens.css and before layout styles. See docs/design-system.md. */
+:is(.mw-btn, .button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mw-space-2);
+  min-height: var(--mw-control-height);
+  padding: var(--mw-space-3) var(--mw-space-5);
+  border: 1px solid transparent;
+  border-radius: var(--mw-radius);
+  background: var(--mw-action);
+  color: var(--mw-on-action);
+  font: var(--mw-weight-medium) var(--mw-text-sm) / 1.4 var(--mw-font-sans);
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: var(--mw-shadow-sm);
+  transition: background-color var(--mw-duration-fast) var(--mw-ease-smooth), border-color var(--mw-duration-fast) var(--mw-ease-smooth);
+}
+:is(.mw-btn, .button):hover { background: var(--mw-action-hover); }
+:is(.mw-btn--outline, .button-outline) { background: var(--mw-surface); color: var(--mw-gray-700); border-color: var(--mw-border-control); box-shadow: none; }
+:is(.mw-btn--outline, .button-outline):hover { background: var(--mw-gray-100); color: var(--mw-text); }
+.mw-btn--secondary { background: var(--mw-gray-900); }
+.mw-btn--secondary:hover { background: var(--mw-gray-800); }
+.mw-btn--ghost { background: transparent; color: var(--mw-text-muted); box-shadow: none; }
+.mw-btn--ghost:hover { background: var(--mw-gray-100); color: var(--mw-text); }
+.mw-btn--danger { background: var(--mw-danger-text); }
+.mw-btn--danger:hover { background: var(--mw-danger-bg); color: var(--mw-danger-text); border-color: var(--mw-danger-text); }
+:is(.mw-btn, .button):disabled { opacity: .5; cursor: not-allowed; }
+
+:is(.mw-card, .task-card, .product-card, .resource-panel, .article-support) {
+  padding: var(--mw-space-5);
+  border: 1px solid var(--mw-border);
+  border-radius: var(--mw-radius);
+  background: var(--mw-surface);
+  box-shadow: var(--mw-shadow-sm);
+}
+:is(.mw-card--hoverable, .task-card, .product-card) {
+  transition: border-color var(--mw-duration-fast) var(--mw-ease-smooth), box-shadow var(--mw-duration-fast) var(--mw-ease-smooth), transform var(--mw-duration-fast) var(--mw-ease-smooth);
+}
+:is(.mw-card--hoverable, .task-card, .product-card):hover {
+  border-color: var(--mw-primary-300);
+  box-shadow: var(--mw-shadow-md);
+  transform: translateY(-1px);
+}
+
+:is(.mw-input, .mw-select, .filter-form select) {
+  min-height: var(--mw-control-height);
+  max-width: 100%;
+  padding: var(--mw-space-3);
+  border: 1px solid var(--mw-border-control);
+  border-radius: var(--mw-radius);
+  background: var(--mw-surface);
+  color: var(--mw-text);
+  font: inherit;
+  transition: border-color var(--mw-duration-fast) var(--mw-ease-smooth);
+}
+.mw-input { width: 100%; }
+.mw-input::placeholder { color: var(--mw-text-muted); }
+:is(.mw-input, .mw-select):disabled { background: var(--mw-gray-100); cursor: not-allowed; }
+:is(.mw-input, .mw-select)[aria-invalid=true] { border-color: var(--mw-danger-text); }
+
+:is(.mw-badge, .tag) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mw-space-1);
+  width: fit-content;
+  padding: var(--mw-space-1) var(--mw-space-2);
+  border-radius: var(--mw-radius-full);
+  background: var(--mw-info-bg);
+  color: var(--mw-info-text);
+  font-size: var(--mw-text-xs);
+  font-weight: var(--mw-weight-medium);
+  line-height: 1.4;
+}
+.mw-badge--success { background: var(--mw-green-50); color: var(--mw-green-700); }
+.mw-badge--warning { background: var(--mw-warning-bg); color: var(--mw-warning-text); }
+.mw-badge--danger { background: var(--mw-danger-bg); color: var(--mw-danger-text); }
+.mw-badge--flow { background: var(--mw-tip-bg); color: var(--mw-tip-text); }
+.mw-badge--secondary { background: var(--mw-secondary-50); color: var(--mw-secondary-700); }
+
+:is(.mw-callout, .callout) {
+  border-inline-start: 3px solid var(--mw-info-text);
+  border-radius: var(--mw-radius);
+  padding: var(--mw-space-5) var(--mw-space-6);
+  margin-block: var(--mw-space-6);
+  background: var(--mw-info-bg);
+  color: var(--mw-info-text);
+  font-size: var(--mw-text-sm);
+  line-height: var(--mw-leading-body);
+}
+:is(.mw-callout, .callout) p { margin: 0; }
+:is(.mw-callout, .callout) strong { display: block; margin-block-end: var(--mw-space-2); }
+:is(.mw-callout--tip, .callout-tip) { background: var(--mw-tip-bg); color: var(--mw-tip-text); border-color: var(--mw-tip-text); }
+:is(.mw-callout--warning, .callout-warning) { background: var(--mw-warning-bg); color: var(--mw-warning-text); border-color: var(--mw-warning-text); }
+
+:is(.mw-btn, .button, .mw-input, .mw-select, .mw-card--hoverable):focus-visible {
+  outline: 2px solid var(--mw-focus);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.mw-btn, .button, .mw-card--hoverable, .task-card, .product-card, .mw-input, .mw-select) { transition: none; transform: none; }
+}

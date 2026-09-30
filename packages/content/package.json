@@ -1,0 +1,14 @@
+{
+  "name": "@mw/content",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./queries": "./src/queries.ts",
+    "./fixtures": "./src/fixtures.ts"
+  },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": { "@portabletext/types": "4.0.2" },
+  "devDependencies": { "typescript": "5.9.3" }
+}

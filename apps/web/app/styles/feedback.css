@@ -1,0 +1,330 @@
+/* Movingwalls feedback, adapted from mw-components.css. Load after motion.css.
+   Radix overlay/content are siblings; Sonner owns toast positioning and stacking. */
+.mw-spinner {
+  display: inline-block;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  color: inherit;
+  border: 2px solid var(--mw-gray-200);
+  border-top-color: currentColor;
+  border-radius: var(--mw-radius-full);
+}
+.mw-spinner--sm { width: 18px; height: 18px; }
+.mw-spinner--md { width: 24px; height: 24px; }
+.mw-spinner--lg { width: 32px; height: 32px; }
+.filter-spinner-slot { display: inline-flex; width: 18px; height: 18px; }
+:is(.button, .language-switcher)[aria-busy=true] { cursor: progress; }
+
+.mw-pending-indicator {
+  position: fixed;
+  bottom: var(--mw-space-4);
+  left: 50%;
+  z-index: 90;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--mw-space-2);
+  width: max-content;
+  max-width: calc(100% - var(--mw-space-8));
+  padding: var(--mw-space-3) var(--mw-space-4);
+  border: 1px solid var(--mw-border);
+  border-radius: var(--mw-radius);
+  background: var(--mw-surface);
+  color: var(--mw-text-muted);
+  box-shadow: var(--mw-shadow-md);
+  font-size: var(--mw-text-sm);
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.mw-pending-indicator[hidden] { display: none; }
+.mw-pending-indicator .mw-spinner { color: var(--mw-action); }
+.mw-pending-indicator > :not(.mw-spinner) { min-width: 0; }
+
+.mw-results-skeleton {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(3, auto);
+  gap: var(--mw-space-4);
+}
+.mw-skeleton-row {
+  display: grid;
+  gap: var(--mw-space-3);
+  min-width: 0;
+  padding-block: var(--mw-space-6);
+  border-block-end: 1px solid var(--mw-border);
+}
+:is(.mw-skeleton, .mw-skeleton-title, .mw-skeleton-line, .mw-skeleton-short) {
+  display: block;
+  height: var(--mw-space-4);
+  max-width: 100%;
+  border-radius: var(--mw-radius);
+  background: var(--mw-gray-100);
+}
+.mw-skeleton-title { width: 60%; height: var(--mw-space-6); }
+.mw-skeleton-line { width: 100%; }
+.mw-skeleton-short { width: 40%; }
+
+.mw-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--mw-modal-backdrop);
+}
+.mw-modal-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 101;
+  transform: translate(-50%, -50%);
+  width: calc(100% - var(--mw-space-8));
+  max-width: 448px;
+  max-height: calc(100dvh - var(--mw-space-8));
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--mw-border);
+  border-radius: var(--mw-radius);
+  background: var(--mw-surface);
+  color: var(--mw-text);
+  box-shadow: var(--mw-shadow-lg);
+  font-family: var(--mw-font-sans);
+  overflow-wrap: anywhere;
+}
+.mw-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--mw-space-4);
+  padding: var(--mw-space-5) var(--mw-space-6) var(--mw-space-4);
+  border-block-end: 1px solid var(--mw-gray-100);
+}
+.mw-modal-header > :not(.mw-icon-button) { min-width: 0; }
+.mw-modal-header > .mw-icon-button { margin-inline-start: auto; }
+.mw-modal-title {
+  margin: 0;
+  color: var(--mw-text);
+  font-size: var(--mw-text-lg);
+  font-weight: var(--mw-weight-semibold);
+  line-height: var(--mw-leading-heading);
+}
+.mw-modal-description {
+  margin: var(--mw-space-1) 0 0;
+  color: var(--mw-text-muted);
+  font-size: var(--mw-text-sm);
+  line-height: var(--mw-leading-body);
+}
+.mw-modal-body { padding: var(--mw-space-5) var(--mw-space-6); }
+.mw-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--mw-space-2);
+  padding: var(--mw-space-4) var(--mw-space-6);
+  border-block-start: 1px solid var(--mw-gray-100);
+}
+.mw-modal-panel :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  font-family: var(--mw-font-sans);
+  font-size: 16px;
+}
+.mw-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--mw-control-height);
+  height: var(--mw-control-height);
+  min-width: var(--mw-control-height);
+  min-height: var(--mw-control-height);
+  padding: var(--mw-space-2);
+  border: 0;
+  border-radius: var(--mw-radius);
+  background: var(--mw-surface);
+  color: var(--mw-text-muted);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mw-icon-button:hover { background: var(--mw-gray-100); color: var(--mw-text); }
+.mw-icon-button:focus-visible { outline: 2px solid var(--mw-focus); outline-offset: 2px; }
+.mw-icon-button:disabled { opacity: .5; cursor: not-allowed; }
+.mw-field-label {
+  display: block;
+  margin-block-end: var(--mw-space-2);
+  color: var(--mw-gray-700);
+  font-size: var(--mw-text-xs);
+  font-weight: var(--mw-weight-medium);
+}
+.mw-field-hint, .mw-inline-error {
+  margin: var(--mw-space-1) 0 0;
+  font-size: var(--mw-text-xs);
+  line-height: var(--mw-leading-body);
+  overflow-wrap: anywhere;
+}
+.mw-field-hint { color: var(--mw-text-muted); }
+.mw-inline-error { color: var(--mw-danger-text); }
+.article-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mw-space-2);
+  margin-block-end: var(--mw-space-5);
+}
+:is(.article-actions, .mw-modal-footer) :is(button, .button) {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.article-helpfulness { margin-block: var(--mw-space-8); padding: var(--mw-space-6); border: 1px solid var(--mw-border); border-radius: var(--mw-radius); background: var(--mw-surface); }
+.article-helpfulness h2 { margin-block-end: var(--mw-space-2); font-size: var(--mw-text-lg); }
+.helpfulness-fields { min-width: 0; padding: 0; margin: var(--mw-space-5) 0 0; border: 0; }
+.helpfulness-options { display: flex; flex-wrap: wrap; gap: var(--mw-space-3); margin-block-end: var(--mw-space-5); }
+.helpfulness-choice { display: flex; align-items: center; gap: var(--mw-space-2); min-height: var(--mw-control-height); padding: var(--mw-space-2) var(--mw-space-3); border: 1px solid var(--mw-border-control); border-radius: var(--mw-radius); font-size: var(--mw-text-sm); cursor: pointer; }
+.helpfulness-choice input { width: 16px; height: 16px; margin: 0; accent-color: var(--mw-action); }
+.helpfulness-choice span { display: inline-flex; align-items: center; gap: var(--mw-space-2); }
+.helpfulness-choice:has(input:checked) { background: var(--mw-primary-50); border-color: var(--mw-action); color: var(--mw-action); }
+.helpfulness-fields .mw-select { display: block; width: 100%; max-width: 360px; margin-block-end: var(--mw-space-4); font-size: 16px; }
+.helpfulness-fields:disabled { opacity: .65; }
+.helpfulness-status p { display: flex; align-items: center; gap: var(--mw-space-2); margin-block: var(--mw-space-4) 0; font-size: var(--mw-text-sm); color: var(--mw-text-muted); }
+.helpfulness-status .lucide { color: var(--mw-green-700); }
+.helpfulness-trap { display: none; }
+@media (max-width: 420px) {
+  .article-helpfulness { padding: var(--mw-space-4); }
+  .helpfulness-options { gap: var(--mw-space-2); }
+  .helpfulness-choice { flex: 1 1 auto; justify-content: center; }
+}
+
+/* Sonner's ol keeps its own position, offsets, width and transforms. The
+   low-specificity toast width also preserves the library's mobile gutters. */
+.mw-toast-region { font-family: var(--mw-font-sans); }
+.mw-toast {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mw-space-3);
+  width: 100%;
+  min-height: calc(var(--mw-control-height) + var(--mw-space-4));
+  padding: var(--mw-space-4);
+  padding-inline-end: calc(var(--mw-control-height) + var(--mw-space-2));
+  border: 1px solid var(--mw-border);
+  border-radius: var(--mw-radius);
+  background: var(--mw-surface);
+  color: var(--mw-text);
+  box-shadow: var(--mw-shadow-md);
+  font-family: var(--mw-font-sans);
+  overflow-wrap: anywhere;
+}
+.mw-toast--success { border-color: var(--mw-green-200); }
+.mw-toast--error { border-color: var(--mw-red-200); }
+.mw-toast--info { border-color: var(--mw-primary-200); }
+.mw-toast--warning { border-color: var(--mw-amber-200); }
+.mw-toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 6px;
+  border-radius: var(--mw-radius);
+  background: var(--mw-info-bg);
+  color: var(--mw-action);
+}
+.mw-toast--success .mw-toast-icon { background: var(--mw-green-50); color: var(--mw-green-700); }
+.mw-toast--error .mw-toast-icon { background: var(--mw-danger-bg); color: var(--mw-danger-text); }
+.mw-toast--info .mw-toast-icon { background: var(--mw-info-bg); color: var(--mw-action); }
+.mw-toast--warning .mw-toast-icon { background: var(--mw-warning-bg); color: var(--mw-warning-text); }
+.mw-toast-content { flex: 1; min-width: 0; }
+.mw-toast-title {
+  margin: 0;
+  font-size: var(--mw-text-sm);
+  font-weight: var(--mw-weight-semibold);
+  line-height: var(--mw-leading-body);
+}
+.mw-toast-description {
+  margin: var(--mw-space-1) 0 0;
+  color: var(--mw-gray-600);
+  font-size: var(--mw-text-xs);
+  line-height: var(--mw-leading-body);
+}
+.mw-toast-close,
+.mw-toast[data-sonner-toast][data-styled=false] [data-close-button] {
+  position: absolute;
+  top: var(--mw-space-2);
+  left: auto;
+  right: auto;
+  inset-inline-end: var(--mw-space-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mw-control-height);
+  height: var(--mw-control-height);
+  min-width: var(--mw-control-height);
+  min-height: var(--mw-control-height);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--mw-radius);
+  background: var(--mw-surface);
+  color: var(--mw-text-muted);
+  transform: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mw-toast-close:hover,
+.mw-toast[data-sonner-toast][data-styled=false] [data-close-button]:hover {
+  background: var(--mw-gray-100);
+  color: var(--mw-text);
+}
+.mw-toast[data-sonner-toast]:focus-visible,
+.mw-toast-close:focus-visible,
+.mw-toast[data-sonner-toast][data-styled=false] [data-close-button]:focus-visible {
+  outline: 2px solid var(--mw-focus);
+  outline-offset: 2px;
+  box-shadow: var(--mw-shadow-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mw-spinner { animation: mw-feedback-spin var(--mw-duration-spin) linear infinite; }
+  .mw-pending-indicator:not([hidden]) {
+    animation: mw-feedback-reveal var(--mw-duration-fast) linear var(--mw-duration-feedback-delay) backwards;
+  }
+  :is(.mw-skeleton, .mw-skeleton-title, .mw-skeleton-line, .mw-skeleton-short) {
+    background: linear-gradient(90deg, var(--mw-gray-100) 25%, var(--mw-gray-200) 37%, var(--mw-gray-100) 63%);
+    background-size: 400% 100%;
+    animation: mw-feedback-shimmer var(--mw-duration-shimmer) var(--mw-ease-smooth) infinite;
+  }
+  .mw-modal-overlay[data-state=open] { animation: mw-feedback-reveal var(--mw-duration-fast) var(--mw-ease-enter); }
+  .mw-modal-overlay[data-state=closed] { animation: mw-feedback-fade-out var(--mw-duration-fast) var(--mw-ease-exit); }
+  .mw-modal-panel[data-state=open] { animation: mw-feedback-modal-in var(--mw-duration-fast) var(--mw-ease-enter); }
+  .mw-modal-panel[data-state=closed] { animation: mw-feedback-modal-out var(--mw-duration-fast) var(--mw-ease-exit); }
+
+  /* Sonner supplies its own transitions and swipe animations; do not replace them. */
+  @keyframes mw-feedback-spin { to { transform: rotate(360deg); } }
+  @keyframes mw-feedback-reveal { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes mw-feedback-fade-out { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes mw-feedback-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+  @keyframes mw-feedback-modal-in {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(.96); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  @keyframes mw-feedback-modal-out {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(.96); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mw-spinner, .mw-pending-indicator, .mw-results-skeleton, .mw-skeleton-row,
+  .mw-skeleton, .mw-skeleton-title, .mw-skeleton-line, .mw-skeleton-short,
+  .mw-modal-overlay, .mw-modal-panel, .mw-modal-panel *, .mw-icon-button,
+  .article-actions button, .mw-toast-region, .mw-toast-region [data-sonner-toast],
+  .mw-toast-region [data-sonner-toast] *, .mw-toast, .mw-toast * {
+    animation: none !important;
+    transition: none !important;
+  }
+  /* Preserve base centering and Sonner's layout translations, not animation transforms. */
+}

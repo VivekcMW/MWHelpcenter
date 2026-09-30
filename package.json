@@ -1,0 +1,36 @@
+{
+  "name": "mw-helpcenter",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.23.3 <23 || >=24",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @mw/web dev",
+    "dev:studio": "pnpm --filter @mw/studio dev",
+    "build": "pnpm --filter @mw/web build && pnpm --filter @mw/studio build",
+    "start": "pnpm --filter @mw/web start",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/node": "^22.14.0",
+    "eslint": "10.11.0",
+    "globals": "^16.0.0",
+    "jsdom": "30.1.1",
+    "prettier": "^3.6.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "4.1.11"
+  }
+}
