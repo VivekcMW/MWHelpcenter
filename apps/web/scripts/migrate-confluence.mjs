@@ -405,6 +405,21 @@ function buildDocuments(snapshot, assetIds = new Map()) {
   return {...classification, sourceArticles: classification.articles, products, collections, articles, warnings}
 }
 
+function buildDraftDocuments(plan) {
+  const weakReference = (reference) => ({...reference, _weak: true})
+  return [
+    ...plan.products,
+    ...plan.collections.map((document) => document.product
+      ? {...document, product: weakReference(document.product)}
+      : document),
+    ...plan.articles.map((document) => ({
+      ...document,
+      primaryCollection: weakReference(document.primaryCollection),
+      products: document.products.map(weakReference),
+    })),
+  ]
+}
+
 function duplicateReviewReport(articles) {
   return DUPLICATE_GROUPS.map((titles) => ({titles, found: titles.map((title) => articles.find((article) => article.title === title)?._id || null)}))
     .filter((group) => group.found.some(Boolean))
@@ -444,18 +459,32 @@ async function applyDraftImport(snapshot) {
   const classification = classifyPages(snapshot)
   const assetIds = new Map()
   const attachments = classification.articles.flatMap((page) => page.attachments || [])
+  const filenames = [...new Set(attachments.map((attachment) => attachment.title).filter(Boolean))]
+  const existingAssets = await client.fetch(
+    '*[_type in ["sanity.imageAsset", "sanity.fileAsset"] && originalFilename in $filenames]{_id, originalFilename}',
+    {filenames},
+  )
+  const existingByFilename = new Map(existingAssets.map((asset) => [asset.originalFilename.toLowerCase(), asset._id]))
+  for (const attachment of attachments) {
+    const existingId = existingByFilename.get(attachment.title.toLowerCase())
+    if (existingId) assetIds.set(attachment.id, existingId)
+  }
+  let completed = assetIds.size
+  console.log(`Reusing ${completed} matching Sanity assets; uploading ${attachments.length - completed} remaining attachments...`)
 
-  await forEachLimit(attachments, 3, async (attachment) => {
+  await forEachLimit(attachments.filter((attachment) => !assetIds.has(attachment.id)), 6, async (attachment) => {
     if (!attachment.localName) throw new Error(`Missing exported asset filename for ${attachment.id}.`)
     const fullPath = resolve(assetsDir, attachment.localName)
     if (!fullPath.startsWith(`${resolve(assetsDir)}${sep}`)) throw new Error('Unsafe local asset path in migration snapshot.')
     const type = attachment.mediaType?.startsWith('image/') ? 'image' : 'file'
     const uploaded = await client.assets.upload(type, createReadStream(fullPath), {filename: attachment.title, contentType: attachment.mediaType})
     assetIds.set(attachment.id, uploaded._id)
+    completed += 1
+    if (completed % 25 === 0 || completed === attachments.length) console.log(`Assets ready: ${completed}/${attachments.length}`)
   })
 
   const plan = buildDocuments(snapshot, assetIds)
-  const documents = [...plan.products, ...plan.collections, ...plan.articles]
+  const documents = buildDraftDocuments(plan)
   const batches = []
   for (let index = 0; index < documents.length; index += 20) batches.push(documents.slice(index, index + 20))
   for (const batch of batches) {
@@ -482,10 +511,74 @@ async function applyDraftImport(snapshot) {
   console.log('Nothing was published. Admin review and explicit publishing in Studio are required.')
 }
 
+async function linkPublishedDocuments(snapshot) {
+  if (!process.argv.includes('--apply-links')) throw new Error('No links changed. Review the Admin-published base documents, then pass --apply-links.')
+  const projectId = process.env.SANITY_PROJECT_ID?.trim()
+  const dataset = process.env.SANITY_DATASET?.trim()
+  if (projectId !== 'vjmj7stb' || dataset !== 'helpcenterdevelopment') {
+    throw new Error('Refusing link operation outside vjmj7stb/helpcenterdevelopment.')
+  }
+  const client = createClient({projectId, dataset, apiVersion: '2025-02-19', useCdn: false, token: requiredEnv('SANITY_MIGRATION_TOKEN')})
+  const classification = classifyPages(snapshot)
+  const products = classification.products
+  const productIds = products.map((product) => PRODUCT_IDS.get(product.title))
+  const collectionIds = products.map((product) => COLLECTION_IDS.get(product.title))
+  const publishedIds = new Set(await client.fetch('*[_id in $ids]._id', {ids: [...productIds, ...collectionIds]}))
+  const patches = []
+  const pendingProducts = []
+  const pendingCollections = []
+  const pendingArticles = []
+
+  for (const product of products) {
+    const productId = PRODUCT_IDS.get(product.title)
+    const collectionId = COLLECTION_IDS.get(product.title)
+    if (!publishedIds.has(productId)) {
+      pendingProducts.push(product.title)
+      pendingCollections.push(product.title)
+      continue
+    }
+    patches.push(client.patch(`drafts.${collectionId}`).set({product: {_type: 'reference', _ref: productId}}))
+  }
+
+  for (const page of classification.articles) {
+    const productId = PRODUCT_IDS.get(page.product)
+    const collectionId = COLLECTION_IDS.get(page.product)
+    if (!publishedIds.has(productId) || !publishedIds.has(collectionId)) {
+      pendingArticles.push(page.title)
+      continue
+    }
+    patches.push(client.patch(`drafts.confluence-article-${page.id}`).set({
+      primaryCollection: {_type: 'reference', _ref: collectionId},
+      products: [{_type: 'reference', _ref: productId}],
+    }))
+  }
+
+  for (let index = 0; index < patches.length; index += 20) {
+    let transaction = client.transaction()
+    for (const patch of patches.slice(index, index + 20)) transaction = transaction.patch(patch)
+    await transaction.commit()
+  }
+
+  const report = {
+    linkedAt: new Date().toISOString(),
+    linkedDraftCount: patches.length,
+    pendingPublishedProducts: [...new Set(pendingProducts)],
+    pendingPublishedCollections: [...new Set(pendingCollections)],
+    pendingArticleCount: pendingArticles.length,
+    pendingArticleExamples: pendingArticles.slice(0, 20),
+    published: false,
+  }
+  await writeFile(join(exportDir, 'link-report.json'), `${JSON.stringify(report, null, 2)}\n`, {mode: 0o600})
+  console.log(`Linked ${report.linkedDraftCount} drafts to Admin-published dependencies.`)
+  console.log(`Pending product groups: ${report.pendingPublishedProducts.length}; pending articles: ${report.pendingArticleCount}.`)
+  console.log('This command only links drafts; it does not publish them.')
+}
+
 async function main() {
   const command = process.argv[2] || 'dry-run'
   if (command === 'export') return exportSpace()
   const snapshot = await readSnapshot()
+  if (command === 'link-published') return linkPublishedDocuments(snapshot)
   const plan = buildDocuments(snapshot)
   const report = await writeDryRunReport(snapshot, plan)
   console.log(`Pages ${report.sourcePages}; products ${report.productDrafts}; collections ${report.collectionDrafts}; article drafts ${report.articleDrafts}.`)
@@ -493,7 +586,7 @@ async function main() {
   console.log(`Dry-run report: ${join(exportDir, 'dry-run-report.json')}`)
   if (command === 'dry-run') return
   if (command === 'import') return applyDraftImport(snapshot)
-  throw new Error('Usage: migrate-confluence.mjs export | dry-run | import --apply-drafts')
+  throw new Error('Usage: migrate-confluence.mjs export | dry-run | import --apply-drafts | link-published --apply-links')
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
@@ -503,4 +596,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   })
 }
 
-export {buildDocuments, classifyPages, parseConfluenceBody, slugify}
+export {buildDocuments, buildDraftDocuments, classifyPages, parseConfluenceBody, slugify}

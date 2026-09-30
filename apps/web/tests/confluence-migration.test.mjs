@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {buildDocuments, classifyPages, parseConfluenceBody, slugify} from '../scripts/migrate-confluence.mjs'
+import {buildDocuments, buildDraftDocuments, classifyPages, parseConfluenceBody, slugify} from '../scripts/migrate-confluence.mjs'
 
 describe('Confluence migration transformation', () => {
   it('maps headings, formatted paragraphs, lists, and nested tables to supported blocks', () => {
@@ -67,6 +67,11 @@ describe('Confluence migration transformation', () => {
     expect(plan.collections[0].product._ref).toBe(plan.products[0]._id)
     expect(plan.articles[0].primaryCollection._ref).toBe(plan.collections[0]._id)
     expect(plan.articles[0].translationGroupId).toBe('confluence-duplicate-1')
+
+    const draftDocuments = buildDraftDocuments(plan)
+    expect(draftDocuments.find((document) => document._type === 'collection').product._weak).toBe(true)
+    expect(draftDocuments.find((document) => document._type === 'article').primaryCollection._weak).toBe(true)
+    expect(draftDocuments.find((document) => document._type === 'article').products[0]._weak).toBe(true)
   })
 
   it('creates stable ASCII slugs for titles with punctuation or non-Latin text', () => {
