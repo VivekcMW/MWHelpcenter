@@ -1,48 +1,71 @@
-// Import React Router's createRequestHandler dynamically
-// (This avoids bundler issues and ensures it's resolved at runtime)
+// Import utilities for finding createRequestHandler
+import { createRequire } from 'module'
+import { fileURLToPath } from 'url'
+import { dirname, resolve } from 'path'
+
 let cachedCreateRequestHandler = null
 
 async function getCreateRequestHandler() {
   if (cachedCreateRequestHandler) return cachedCreateRequestHandler
+  
   try {
-    // Try dynamic import from react-router
-    const { createRequestHandler } = await import('react-router')
-    cachedCreateRequestHandler = createRequestHandler
-    return createRequestHandler
-  } catch (err) {
-    console.warn('Cannot import createRequestHandler from react-router:', err.message)
+    // Try method 1: Direct dynamic import
+    try {
+      const { createRequestHandler } = await import('react-router')
+      cachedCreateRequestHandler = createRequestHandler
+      console.log('[createRequestHandler] Loaded via import()')
+      return createRequestHandler
+    } catch (err1) {
+      console.log('[createRequestHandler] import() failed:', err1.message)
+      
+      // Try method 2: Use createRequire from node_modules
+      try {
+        const require = createRequire(import.meta.url)
+        const { createRequestHandler } = require('react-router')
+        cachedCreateRequestHandler = createRequestHandler
+        console.log('[createRequestHandler] Loaded via createRequire()')
+        return createRequestHandler
+      } catch (err2) {
+        console.log('[createRequestHandler] createRequire() failed:', err2.message)
+        throw err2
+      }
+    }
+  } catch (error) {
+    console.error('[createRequestHandler] All import methods failed:', error.message)
+    console.error('Will use fallback implementation')
     
-    // Fallback: Implement createRequestHandler locally
-    // This is a simplified implementation that handles the common SSR case
+    // Fallback: Implement a minimal createRequestHandler
     return (build, mode) => {
       return async (request, loadContext = {}) => {
         try {
-          // Get the handler function from the build module
           const handler = build.entry?.module?.default
           if (typeof handler !== 'function') {
             throw new Error('Handler not found in build module')
           }
           
-          // Create the router context from build exports
-          // React Router expects a specific structure that createServerRoutes will process
+          // Create minimal router context
+          // This attempts to provide what ServerRouter expects
           const routerContext = {
-            routes: build.routes,
-            assets: build.assets,
+            routes: build.routes || {},
+            assets: build.assets || {},
             basename: build.basename || '/',
             isSpaMode: build.isSpaMode || false,
             future: build.future || {},
-            manifest: build.routes ? { routes: build.routes } : {},
-            routeModules: Object.values(build.routes || {}).reduce((acc, route) => {
-              if (route.id && route.module) {
-                acc[route.id] = route.module
+            // Create manifest from routes
+            manifest: { routes: build.routes || {} },
+            // Create routeModules from route objects
+            routeModules: Object.entries(build.routes || {}).reduce((acc, [id, route]) => {
+              if (route && route.module) {
+                acc[id] = route.module
               }
               return acc
             }, {}),
+            // Create empty staticHandlerContext
             staticHandlerContext: {
               loaderData: {},
-              matches: [],
               actionData: null,
               errors: null,
+              matches: [],
             },
             criticalCss: '',
             serverHandoffString: '',
@@ -51,7 +74,6 @@ async function getCreateRequestHandler() {
           const responseHeaders = new Headers()
           responseHeaders.set('Content-Type', 'text/html; charset=utf-8')
           
-          // Call the handler with proper React Router SSR parameters
           return await handler(
             request,
             200,
@@ -60,7 +82,7 @@ async function getCreateRequestHandler() {
             loadContext
           )
         } catch (error) {
-          console.error('Error in createRequestHandler fallback:', error.message)
+          console.error('[createRequestHandler fallback] Error:', error.message)
           throw error
         }
       }
