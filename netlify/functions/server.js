@@ -95,12 +95,26 @@ export default async (event, context) => {
       throw new Error(`Invalid build structure: handler not found`)
     }
     
+    // Log what we have from the build
+    console.log(`[${new Date().toISOString()}] Build exports available:`, {
+      hasRoutes: !!build.routes,
+      hasAssets: !!build.assets,
+      hasisSpaMode: !!build.isSpaMode,
+      hasEntry: !!build.entry,
+      exportKeys: Object.keys(build).slice(0, 10),
+    })
+    
     // Prepare the router context with routes and other configuration from the build
     const routerContext = {
-      routes: build.routes,
-      assets: build.assets,
-      isSpaMode: build.isSpaMode,
+      routes: build.routes || {},
+      assets: build.assets || {},
+      isSpaMode: build.isSpaMode || false,
     }
+    
+    console.log(`[${new Date().toISOString()}] RouterContext prepared:`, {
+      hasRoutes: !!routerContext.routes,
+      routeCount: Object.keys(routerContext.routes).length,
+    })
     
     const responseHeaders = new Headers()
     responseHeaders.set('Content-Type', 'text/html; charset=utf-8')
