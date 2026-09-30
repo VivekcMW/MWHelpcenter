@@ -83,22 +83,21 @@ describe.each(['en', 'ja'] as const)('SiteHeader (%s)', (locale) => {
     { name: text.bestPractices, suffix: '/collections/best-practices' },
   ]
 
-  test('renders a localized brand, desktop links, mobile links and support destinations', async () => {
+  test('renders localized navigation without a Contact Support navbar action', async () => {
     const setupResult = setup(locale, '/articles/example')
     const { header, desktop, mobile, actions, details, router, user, i18n } = setupResult
     const brand = within(header).getByRole('link', { name: i18n.t('siteTitle') })
     expect(brand.getAttribute('href')).toBe(`/${locale}`)
     openMenu(details)
     expect(within(desktop).getAllByRole('link')).toHaveLength(3)
-    expect(within(mobile).getAllByRole('link')).toHaveLength(4)
+    expect(within(mobile).getAllByRole('link')).toHaveLength(3)
     for (const nav of [desktop, mobile]) {
       for (const { name, suffix } of destinations) {
         expect(within(nav).getByRole('link', { name }).getAttribute('href')).toBe(`/${locale}${suffix}`)
       }
+      expect(within(nav).queryByRole('link', { name: text.support })).toBeNull()
     }
-    for (const region of [actions, mobile]) {
-      expect(within(region).getByRole('link', { name: text.support }).getAttribute('href')).toBe(`/${locale}/support`)
-    }
+    expect(within(actions).queryByRole('link', { name: text.support })).toBeNull()
     await user.click(brand)
     await waitFor(() => expectLocation(router, `/${locale}`))
   })
@@ -117,15 +116,17 @@ describe.each(['en', 'ja'] as const)('SiteHeader (%s)', (locale) => {
     { suffix: '/collections/best-practices-extra', active: null },
     { suffix: '/support-extra', active: null },
     { suffix: '/articles/example', active: null },
-  ] as const)('sets collection/support aria-current only for exact paths: $suffix', ({ suffix, active }) => {
+  ] as const)('sets collection aria-current only for exact paths: $suffix', ({ suffix, active }) => {
     const { desktop, mobile, actions, details } = setup(locale, suffix)
     openMenu(details)
-    for (const key of ['gettingStarted', 'bestPractices', 'support'] as const) {
-      for (const region of [key === 'support' ? actions : desktop, mobile]) {
+    for (const key of ['gettingStarted', 'bestPractices'] as const) {
+      for (const region of [desktop, mobile]) {
         const link = within(region).getByRole('link', { name: text[key] })
         expect(link.getAttribute('aria-current')).toBe(active === key ? 'page' : null)
       }
     }
+    expect(within(actions).queryByRole('link', {name: text.support})).toBeNull()
+    expect(within(mobile).queryByRole('link', {name: text.support})).toBeNull()
   })
 
   test.each([
@@ -177,7 +178,6 @@ describe.each(['en', 'ja'] as const)('SiteHeader (%s)', (locale) => {
     { key: 'products', suffix: '#products' },
     { key: 'gettingStarted', suffix: '/collections/getting-started' },
     { key: 'bestPractices', suffix: '/collections/best-practices' },
-    { key: 'support', suffix: '/support' },
   ] as const)('closes after clicking mobile $key and after going back', async ({ key, suffix }) => {
     const { details, mobile, router, user, header } = setup(locale)
     openMenu(details)

@@ -28,8 +28,6 @@ main { min-height: 65vh; }
 .main-nav a::after { content: ''; position: absolute; inset-inline: 0; inset-block-end: 2px; height: 2px; background: currentColor; transform: scaleX(0); }
 .main-nav a:is(:hover, :focus-visible, [aria-current])::after { transform: scaleX(1); }
 .header-actions { gap: var(--mw-space-3); flex-shrink: 0; }
-.header-support { font: inherit; padding: var(--mw-space-2) var(--mw-space-4); white-space: nowrap; }
-.header-support[aria-current=page] { background: var(--mw-action-hover); }
 .mobile-navigation { display: none; }
 .language-switcher { display: flex; flex-direction: column; align-items: stretch; gap: var(--mw-space-2); max-width: 140px; margin: 0; }
 .language-select-wrap { position: relative; }
@@ -162,7 +160,7 @@ th { background: var(--surface); font-weight: var(--mw-weight-semibold); }
 .error-page p { color: var(--muted); line-height: 1.7; }
 @media (max-width: 1023px) {
   .header-inner { flex-wrap: wrap; gap: 0 var(--mw-space-3); }
-  .main-nav, .header-actions > .header-support { display: none; }
+  .main-nav { display: none; }
   .header-actions { margin-inline-start: auto; margin-inline-end: calc(var(--mw-control-height) + var(--mw-space-2)); }
   /* The summary stays in the top row; the native disclosure expands in flow,
      not over the article. No JS or fixed-height viewport trap is required. */
@@ -176,7 +174,6 @@ th { background: var(--surface); font-weight: var(--mw-weight-semibold); }
   .mobile-nav > a { display: flex; align-items: center; min-height: var(--mw-control-height); padding: var(--mw-space-3); border-radius: var(--radius); }
   .mobile-nav > a:not(.button):is(:hover, :focus-visible, [aria-current]) { background: var(--mw-primary-50); color: var(--mw-action); }
   .mobile-nav > a:not(.button)[aria-current] { box-shadow: inset 3px 0 var(--mw-action); }
-  .mobile-nav .header-support { margin-block-start: var(--mw-space-2); }
   /* Native selects stay at 16px on touch layouts to avoid iOS focus zoom. */
   .site-header .language-select-wrap select { font-size: 16px; width: 132px; }
 }

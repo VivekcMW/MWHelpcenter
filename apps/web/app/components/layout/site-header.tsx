@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { ArrowUpRight, Menu, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { localePath, type Locale } from '../../i18n/config'
 import { LanguageSwitcher } from '../ui/language-switcher'
 
@@ -18,13 +18,6 @@ function NavigationLinks({ locale }: { readonly locale: Locale }) {
     <NavLink end to={localePath(locale, 'collections/getting-started')}>{t('gettingStarted')}</NavLink>
     <NavLink end to={localePath(locale, 'collections/best-practices')}>{t('bestPractices')}</NavLink>
   </>
-}
-
-function SupportLink({ locale }: { readonly locale: Locale }) {
-  const { t } = useTranslation('navigation')
-  return <NavLink end className="button header-support" to={localePath(locale, 'support')}>
-    {t('support')} <ArrowUpRight size={16} aria-hidden="true" />
-  </NavLink>
 }
 
 export function SiteHeader({ locale }: { readonly locale: Locale }) {
@@ -71,7 +64,7 @@ export function SiteHeader({ locale }: { readonly locale: Locale }) {
         <span className="brand-divider">{nav('helpCenter')}</span>
       </Link>
       <nav className="main-nav" aria-label={nav('primary')}><NavigationLinks locale={locale} /></nav>
-      <div className="header-actions"><LanguageSwitcher locale={locale} /><SupportLink locale={locale} /></div>
+      <div className="header-actions"><LanguageSwitcher locale={locale} /></div>
       <details className="mobile-navigation" ref={menu}>
         <summary>
           <span className="sr-only">{nav('menu')}</span>
@@ -80,7 +73,6 @@ export function SiteHeader({ locale }: { readonly locale: Locale }) {
         </summary>
         <nav className="mobile-nav" aria-label={nav('primary')}>
           <NavigationLinks locale={locale} />
-          <SupportLink locale={locale} />
         </nav>
       </details>
     </div>
