@@ -7,8 +7,6 @@
 
 [functions."server"]
   node_bundler = "esbuild"
-  memory = 1024
-  timeout = 30
 
 # Environment variables (set these in Netlify UI or .env file)
 [env]
