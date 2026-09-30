@@ -40,6 +40,18 @@ jobs:
       
       - name: Build
         run: pnpm build
+
+      - name: Configure production Sanity runtime
+        if: github.ref == 'refs/heads/main'
+        run: |
+          pnpm exec netlify env:set CONTENT_MODE sanity --context production --scope functions --site "$NETLIFY_SITE_ID" --force
+          pnpm exec netlify env:set SANITY_PROJECT_ID vjmj7stb --context production --scope functions --site "$NETLIFY_SITE_ID" --force
+          pnpm exec netlify env:set SANITY_DATASET helpcenterdevelopment --context production --scope functions --site "$NETLIFY_SITE_ID" --force
+          pnpm exec netlify env:set SANITY_API_VERSION 2025-02-19 --context production --scope functions --site "$NETLIFY_SITE_ID" --force
+          pnpm exec netlify env:set SITE_URL https://mwhelpcenter.netlify.app --context production --scope functions --site "$NETLIFY_SITE_ID" --force
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
       
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3
