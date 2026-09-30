@@ -126,7 +126,7 @@ async function getRequestHandler() {
   }
 }
 
-module.exports = async (event, context) => {
+exports.handler = async (event, context) => {
   try {
     // Log incoming request for debugging
     console.log(`[${new Date().toISOString()}] ${event.httpMethod} ${event.path}${event.rawQuery ? '?' + event.rawQuery : ''}`)
