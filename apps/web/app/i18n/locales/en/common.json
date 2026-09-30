@@ -32,7 +32,7 @@
   "supportTitle": "A little more help, when you need it.",
   "supportDescription": "Include the product, the task you were trying to complete, and what happened. Never include passwords or access tokens.",
   "contactSupport": "Contact support",
-  "supportPending": "The support channel has not been configured yet. This preview does not send or store requests.",
+  "supportPending": "Support email is not configured, so this page cannot send a request. Please use your existing Moving Walls contact. An email link will appear here once the site administrator configures it.",
   "supportEmail": "Email the support team",
   "errorTitle": "This answer isn't available right now.",
   "notFoundTitle": "We couldn't find that page.",

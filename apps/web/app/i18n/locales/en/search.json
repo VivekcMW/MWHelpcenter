@@ -16,5 +16,7 @@
   "emptyQuery": "Enter a question or keyword to get started.",
   "productLabel": "Product",
   "allProducts": "All products",
+  "clearFilter": "Clear filter",
+  "filterActive": "Filtering by",
   "tooLong": "Please keep your search to 200 characters or fewer."
 }

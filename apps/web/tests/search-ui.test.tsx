@@ -36,6 +36,29 @@ async function page(value: Data) {
 }
 
 describe.each(['en', 'ja'] as const)('search UI (%s)', (locale) => {
+  it('labels the active product and clears it without losing the localized query', async () => {
+    const query = 'campaign & 広告'
+    const products = [{ _id: 'inventory', slug: 'inventory', title: 'Inventory', language: locale, description: 'Inventory guides', icon: 'boxes', order: 1 }]
+    const router = createMemoryRouter([{
+      path: '/:locale/search', Component: SearchPage,
+      loader: ({ request }) => {
+        const params = new URL(request.url).searchParams
+        return data(locale, { query: params.get('q') ?? '', product: params.get('product') ?? '', products, results: [result(locale)] })
+      },
+    }], { initialEntries: [`/${locale}/search?${new URLSearchParams({ q: query, product: 'inventory' })}`] })
+    const { container } = render(<I18nextProvider i18n={createI18n(locale)}><RouterProvider router={router} /></I18nextProvider>)
+    const t = createI18n(locale).getFixedT(locale, 'search')
+    const clear = await screen.findByRole('link', { name: t('clearFilter') })
+    expect(container.querySelector('.filter-badge')?.textContent).toContain(t('filterActive'))
+    expect(container.querySelector('.filter-badge strong')?.textContent).toBe('Inventory')
+    await act(async () => { clear.click() })
+    expect(router.state.location.pathname).toBe(`/${locale}/search`)
+    expect(new URLSearchParams(router.state.location.search).get('q')).toBe(query)
+    expect(new URLSearchParams(router.state.location.search).has('product')).toBe(false)
+    expect(container.querySelector('.filter-badge')).toBeNull()
+    expect((screen.getByRole('combobox', { name: t('productLabel') }) as HTMLSelectElement).value).toBe('')
+  })
+
   it('offers safe same-language no-results links, preserving query while clearing product', async () => {
     const value = data(locale)
     const { container } = await page(value)

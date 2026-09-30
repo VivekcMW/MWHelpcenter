@@ -1,0 +1,51 @@
+[build]
+  command = "pnpm build"
+  publish = "apps/web/build/client"
+  functions = "netlify/functions"
+  node_bundler = "esbuild"
+  environment = { NODE_VERSION = "22.23.3" }
+
+[functions."server"]
+  node_bundler = "esbuild"
+  memory = 1024
+  timeout = 30
+
+# Environment variables (set these in Netlify UI or .env file)
+[env]
+  [env.production]
+    NODE_ENV = "production"
+    CONTENT_MODE = "sanity"
+
+  [env.deploy-preview]
+    NODE_ENV = "production"
+    CONTENT_MODE = "sanity"
+
+  [env.branch-deploy]
+    NODE_ENV = "development"
+    CONTENT_MODE = "demo"
+
+# Serve static assets first, then fall back to function
+[[redirects]]
+  from = "/assets/*"
+  to = "/assets/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server"
+  status = 200
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

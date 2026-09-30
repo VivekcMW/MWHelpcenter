@@ -16,5 +16,7 @@
   "emptyQuery": "質問やキーワードを入力して検索してください。",
   "productLabel": "製品",
   "allProducts": "すべての製品",
+  "clearFilter": "フィルターをクリア",
+  "filterActive": "フィルター条件:",
   "tooLong": "検索語句は 200 文字以内で入力してください。"
 }

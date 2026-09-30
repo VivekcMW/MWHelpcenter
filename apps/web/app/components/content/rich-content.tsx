@@ -4,7 +4,10 @@ import { safeHref, sanityImageUrl } from '../../lib/security/urls'
 
 export function contentHeadings(body: Article['body']) {
   return body.flatMap((block) => {
-    if (block._type === 'procedure') return [{ id: `section-${block._key}`, text: block.title }]
+    if (block._type === 'procedure') return [
+      { id: `section-${block._key}`, text: block.title },
+      ...block.steps.map((step) => ({ id: `section-${block._key}-step-${step._key}`, text: step.title })),
+    ]
     if (block._type === 'block' && ['h2', 'h3'].includes(block.style ?? '')) {
       return [{ id: `section-${block._key}`, text: block.children.map((span) => span.text ?? '').join('') }]
     }
@@ -25,7 +28,7 @@ const components: Partial<PortableTextComponents> = {
   },
   types: {
     callout: ({ value }: { value: Callout }) => <aside className={`callout callout-${value.tone}`}>{value.title && <strong>{value.title}</strong>}<p>{value.text}</p></aside>,
-    procedure: ({ value }: { value: Procedure }) => <section><h2 id={`section-${value._key}`}>{value.title}</h2><ol className="procedure">{value.steps.map((step) => <li key={step._key}><h3>{step.title}</h3><p>{step.description}</p></li>)}</ol></section>,
+    procedure: ({ value }: { value: Procedure }) => <section><h2 id={`section-${value._key}`}>{value.title}</h2><ol className="procedure">{value.steps.map((step) => <li key={step._key}><h3 id={`section-${value._key}-step-${step._key}`}>{step.title}</h3><p>{step.description}</p></li>)}</ol></section>,
     simpleTable: ({ value }: { value: SimpleTable }) => <div className="table-scroll" tabIndex={0} role="region" aria-label={value.caption}><table><caption>{value.caption}</caption><thead><tr>{value.columns.map((column, index) => <th scope="col" key={`${index}-${column}`}>{column}</th>)}</tr></thead><tbody>{value.rows.map((row) => <tr key={row._key}>{row.cells.map((cell, index) => <td key={index}>{cell}</td>)}</tr>)}</tbody></table></div>,
     imageWithCaption: ({ value }: { value: ImageWithCaption }) => {
       const src = sanityImageUrl(value.image.asset.url)
