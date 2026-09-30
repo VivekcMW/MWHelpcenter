@@ -4,31 +4,55 @@
 
 ## Status and scope
 
-This is a plan, **not an implemented export/import or redirect script**. No Intercom account access, export authorization, cloud import, or content ownership verification is established by the repository. Demo fixtures are original illustrative samples, not migrated documentation.
+This is a Confluence Helpdesk → Sanity migration plan, **not an implemented importer or redirect script**. The signed-in Confluence inventory was inspected on 2026-09-30. It contains 182 current pages: one space overview, seven product-section pages, and 174 content pages, with 574 image attachments across 110 pages. The attachment inventory is 526 PNG and 48 JPEG files. Demo fixtures are original illustrative samples, not migrated documentation.
+
+The approved scope is all current content pages, transformed to Sanity **drafts only** for review. The Admin is the publication approver. Do not publish or expose migrated material automatically. Exclude the explicitly internal page and quarantine apparent obsolete/duplicate candidates until the Admin decides whether to exclude, merge, or retain them. The Confluence space overview has placeholder text and is not a public help article.
+
+Verified top-level sections and content-page counts:
+
+| Section | Pages |
+| --- | ---: |
+| CMS | 69 |
+| Admin Console | 25 |
+| Inventory | 23 |
+| LMX GSL | 20 |
+| Influence | 15 |
+| Measure Platform | 12 |
+| Planner | 10 |
+
+Create a new `product` document for **LMX GSL**; it is not one of the existing six demo product fixtures. The seven Confluence section pages are taxonomy/navigation roots, not seven extra help articles.
 
 The new help-center folder is separate from the existing `movingwalls-help-page` static site and `mw-helpcenter-wireframes` prototype. Preserve both as reference artifacts; do not overwrite, delete, or deploy over them as part of preparing migration. Any later traffic cutover needs explicit approval and a rollback path.
 
+### Review queue from inventory
+
+- Explicitly internal: `LMX Troubleshooting Guide (Internal)` (Confluence page `304940498`). Keep out of the public migration until the Admin explicitly clears or rejects it.
+- Explicit old-copy marker: `LMX Content Black Screen/Logo Issue (OLD COPY)` (page `304940611`). Compare with `LMX Content Black Screen/Logo Issue`; do not import both as public articles without Admin disposition.
+- Likely duplicates to compare by body and attachments: `CMS Installations Guide Android and Windows` vs `Installations Guide for Android and Windows`; `Unable to Publish due to error Message` vs `Guides - Unable to Publish due to error Message`; `How to Schedule URL & Google IMA(VAST)` vs `How to Schedule Vast and URL`; and `How to Schedule Place Exchange Widget` vs `How to Schedule Place Exchange Widgets`.
+- These are review candidates, not confirmed duplicates. Similar titles and incidental uses of “internal” in ordinary article instructions are not grounds for automatic exclusion.
+- Confluence labels observed: `android`, `cms`, `playlog`, and `troubleshooting`. Preserve them in the restricted migration manifest; map them to Sanity types/fields only after editorial review.
+
 ## 1. Obtain an authorized source export
 
-- Confirm the content owner, export authorization, intended scope, and permitted use of text, screenshots, attachments, and third-party assets.
-- Use the account's supported Intercom export/API facilities with authorized access. Do not assume public accessibility grants reuse rights, or scrape around account restrictions.
-- Inventory articles, collections, product associations, locales, source IDs, slugs, URLs, publication state, and available timestamps.
-- Keep a read-only source snapshot and migration manifest in approved restricted storage, outside public docs. Exclude private conversations, customer details, internal notes, credentials, and nonpublic editorial commentary from public outputs.
-- Record source IDs and checksums so a future importer can be repeatable and auditable rather than duplicating documents on every run.
+- Use an authorized Confluence Helpdesk space XML/HTML export or a scoped, read-only Confluence API credential. Do not copy a browser session cookie into scripts or source files.
+- Preserve page IDs, current page versions, ancestor paths, labels, storage-format body, attachment metadata, and original page URLs in a restricted migration snapshot/manifest.
+- The signed-in inventory confirmed 182 current pages and 574 image attachments. Space-wide attachment enumeration returned a server error, but all 182 per-page attachment listings succeeded; use per-page listing in the importer.
+- Keep source exports and manifests in approved restricted storage outside the public web root and Git. Exclude comments, user profile details, credentials, and confidential content from the public dataset.
+- Record source IDs and checksums so import retries are idempotent and auditable. Only import content with approved reuse rights.
 
 ## 2. Map and review content
 
 | Source concept | Planned target |
 | --- | --- |
-| Product/topic taxonomy | Reviewed `product` documents; assign stable slugs and order |
-| Collection/category | `collection`, optionally linked to a product; explicitly decide how any deeper hierarchy is flattened |
+| Confluence product section | Reviewed `product` document; create products for CMS, Planner, Admin Console, Measure Platform, Influence, Inventory, and LMX GSL |
+| Curated topic within a product | `collection` linked to the product; each article must have one same-language primary collection |
 | Article | `article` with approved title, summary, primary collection, products, content type, and structured body |
-| Locale/translation relationship | `language` and article `translationGroupId`; initially import only reviewed English content |
+| Locale/translation relationship | `language` and article `translationGroupId`; verify source language and translation pairs rather than infer translations from similar titles |
 | Publication/review timestamps | Truthful editor-reviewed dates; do not mistake a source modification time for completed review |
 | Public author information | Optional `author` schema data only; no current article-author rendering integration |
-| Original article URL | Redirect manifest entry; not an automatically active CMS redirect |
+| Confluence page ID, URL, labels, and source title | Restricted migration manifest; use approved canonical article paths for redirect planning |
 
-Resolve slug collisions within each type/language and choose stable translation group IDs. Preserve source IDs in the restricted migration manifest unless a separately reviewed schema extension is needed. The current public contract intentionally exposes only explicit fields.
+Create product-scoped collections from reviewed topics/labels; if an article cannot yet be categorized, place it in an Admin-reviewed `General` collection for its product rather than leaving its required `primaryCollection` empty. Resolve slug collisions within each type/language and choose stable translation group IDs. Preserve source IDs in the restricted migration manifest unless a separately reviewed schema extension is needed. The current public contract intentionally exposes only explicit fields.
 
 Convert source HTML into supported Portable Text paragraphs, H2/H3, lists, quotes, marks, safe links, callouts, images, procedures, and simple tables. Do not copy arbitrary HTML, scripts, styles, or iframes into the body. Flag unsupported embeds, complex tables, and inaccessible media for manual rewriting. See the [renderer mapping](content-model.md#rich-content--renderer-mapping).
 
@@ -41,11 +65,13 @@ Convert source HTML into supported Portable Text paragraphs, H2/H3, lists, quote
 - Do not hotlink temporary exports, signed URLs, local `/tmp` files, or the wireframe prototype. Test every destination after source credentials are removed from the reader environment.
 - Review image alt text, captions, resolution, and mobile rendering. Crop/hotspot data is not currently applied by the renderer.
 
-## 4. Design a staged importer before building one
+## 4. Build and run a staged importer
 
-Define an idempotent source-ID mapping, dry-run report, validation failure handling, and rollback before implementing any migration tool. No such tool is included now.
+No Confluence importer is implemented yet. Build one with a dry-run report, explicit allow/quarantine decisions, an idempotent source-ID mapping, validation failure handling, and rollback before any Sanity writes. The Admin is the named publication approver; imported content remains drafts until Admin review and explicit publish.
 
-Use a nonproduction dataset first. Validate imported data against actual schema constraints and the handwritten public contract; TypeScript result annotations do not validate external JSON. Import dependencies in order: assets/products, collections, then articles. Keep articles as drafts for review and publish referenced same-language documents before dependent articles.
+Use `helpcenterdevelopment` first. The dataset is currently public, so only approved public material may be imported; draft status is not permission to store confidential content. Keep `LMX Troubleshooting Guide (Internal)` out of the import pending explicit Admin clearance. Quarantine the `OLD COPY` page and candidate duplicate pairs in the review manifest; do not auto-delete or auto-publish based on title similarity.
+
+Validate imported data against actual schema constraints and the handwritten public contract; TypeScript result annotations do not validate external JSON. Import dependencies in order: products, collections, assets, then article drafts. Articles need same-language product and collection references. Do not configure the production dataset or publish articles until the Admin review gate is complete.
 
 Reconcile document/asset counts, links, translation relationships, slug uniqueness, body member support, and rendered output. Schema validation and editorial review are both required; neither implies authorized publication by itself.
 
