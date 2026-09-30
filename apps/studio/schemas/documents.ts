@@ -26,6 +26,13 @@ export const article = defineType({
     language,
     defineField({name: 'translationGroupId', type: 'string', description: 'Shared stable identifier across translations; not a slug or document reference.', validation: (rule) => rule.required().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/)}),
     defineField({name: 'primaryCollection', type: 'reference', to: [{type: 'collection'}], options: {filter: ({document}) => ({filter: 'language == $language', params: {language: document.language ?? 'en'}})}, validation: (rule) => rule.required().custom(sameLanguage)}),
+    defineField({name: 'collections', title: 'Additional collections', description: 'Optional curated groupings; the primary collection above remains the breadcrumb.', type: 'array', of: [defineArrayMember({type: 'reference', to: [{type: 'collection'}], options: {filter: ({document}) => ({filter: 'language == $language', params: {language: document.language ?? 'en'}})}})], validation: (rule) => rule.unique().custom(async (value, context) => {
+      const languageResult = await sameLanguage(value, context)
+      if (languageResult !== true) return languageResult
+      const primaryId = (context.document?.primaryCollection as {_ref?: string} | undefined)?._ref
+      return Array.isArray(value) && primaryId && value.some((reference) => (reference as {_ref?: string})._ref === primaryId)
+        ? 'The primary collection is already selected.' : true
+    })}),
     defineField({name: 'products', type: 'array', of: [defineArrayMember({type: 'reference', to: [{type: 'product'}], options: {filter: ({document}) => ({filter: 'language == $language', params: {language: document.language ?? 'en'}})}})], validation: (rule) => rule.required().min(1).unique().custom(sameLanguage)}),
     defineField({name: 'contentType', type: 'string', options: {list: ['guide', 'faq', 'troubleshooting', 'overview', 'best-practice']}, validation: (rule) => rule.required()}),
     defineField({name: 'body', type: 'richContent', validation: (rule) => rule.required().min(1)}),

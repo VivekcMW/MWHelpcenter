@@ -6,7 +6,7 @@
   summary-only, and returns the original generic article objects without reading
   bodies or adding presentation fields.
 - `searchArticles` also indexes supported visible body text: Portable Text spans,
-  callouts, procedures, tables and image captions. Annotation URLs, assets, alt
+  callouts, code blocks, procedures, tables and image captions. Annotation URLs, assets, alt
   text, keys, SEO and arbitrary metadata are not indexed or returned.
 - Every distinct query term must match. Locale and product filters are applied
   before matching; draft and version article IDs are excluded.

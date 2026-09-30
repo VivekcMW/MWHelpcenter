@@ -137,16 +137,37 @@ function localName(node) {
   return (node?.name || node?.tagName || '').toLowerCase().split(':').at(-1)
 }
 
+function decodeHtmlEntities(value) {
+  if (!value?.includes('&')) return value ?? ''
+  // Parse as textarea text so `<` remains text while HTML5 named entities decode.
+  const safeText = value.replaceAll('<', '&lt;')
+  return load(`<textarea>${safeText}</textarea>`).root().find('textarea').text()
+}
+
 function attribute(node, name) {
   const attributes = node?.attribs || {}
   const key = Object.keys(attributes).find((candidate) => candidate === name || candidate.endsWith(`:${name}`))
-  return key ? attributes[key] : undefined
+  return key ? decodeHtmlEntities(attributes[key]) : undefined
 }
 
 function plainText(html) {
   const $ = load(html || '', {xml: true})
   $('script, style').remove()
-  return $.root().text().replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim()
+  return decodeHtmlEntities($.root().text()).replaceAll('\u00a0', ' ').replaceAll(/\s+/g, ' ').trim()
+}
+
+function findDescendant(node, target) {
+  for (const child of node?.children || []) {
+    if (child.type === 'tag' && localName(child) === target) return child
+    const nested = findDescendant(child, target)
+    if (nested) return nested
+  }
+  return undefined
+}
+
+function rawText(node) {
+  if (node?.type === 'text') return node.data || ''
+  return (node?.children || []).map(rawText).join('')
 }
 
 function slugify(value) {
@@ -186,10 +207,11 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
   function addInline(nodes, marks = [], spans = [], markDefs = []) {
     for (const node of nodes || []) {
       if (node.type === 'text') {
-        if (!node.data) continue
+        const text = decodeHtmlEntities(node.data)
+        if (!text) continue
         const previous = spans.at(-1)
-        if (previous && previous.marks.join('|') === marks.join('|')) previous.text += node.data
-        else spans.push({_key: key('s'), _type: 'span', text: node.data, marks: [...marks]})
+        if (previous && previous.marks.join('|') === marks.join('|')) previous.text += text
+        else spans.push({_key: key('s'), _type: 'span', text, marks: [...marks]})
         continue
       }
       if (node.type !== 'tag') continue
@@ -220,8 +242,23 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
     body.push(block)
   }
 
-  function addCallout(title, text) {
-    body.push({_key: key('c'), _type: 'callout', tone: 'warning', title: title.slice(0, 100), text: (text || 'Review the original Confluence content before publication.').replace(/\s+/g, ' ').slice(0, 1500)})
+  function addCallout(title, text, tone = 'warning') {
+    body.push({_key: key('c'), _type: 'callout', tone, title: title.slice(0, 100), text: (text || 'Review the original Confluence content before publication.').replace(/\s+/g, ' ').slice(0, 1500)})
+  }
+
+  function addCodeBlock(node) {
+    const plainTextBody = findDescendant(node, 'plain-text-body')
+    const code = rawText(plainTextBody).replace(/\r\n?/g, '\n')
+    if (!code.trim()) {
+      warnings.push(`Empty Confluence code macro requires review: ${pageTitle} (${pageId})`)
+      addCallout('Code block requires review', 'The source code macro was empty or could not be decoded.')
+      return
+    }
+    const languageParameter = (node.children || []).find((child) =>
+      localName(child) === 'parameter' && attribute(child, 'name') === 'language',
+    )
+    const language = decodeHtmlEntities(rawText(languageParameter)).trim()
+    body.push({_key: key('code'), _type: 'codeBlock', code, ...(language ? {language: language.slice(0, 40)} : {})})
   }
 
   function attachmentFilename(node) {
@@ -279,14 +316,28 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
       .filter((cells) => cells.length > 0)
     if (!rows.length) return
     const headerIndex = rows.findIndex((cells) => cells.some((cell) => localName(cell) === 'th'))
-    const header = rows.splice(headerIndex >= 0 ? headerIndex : 0, 1)[0]
-    const columns = header.map((cell) => plainText($.html(cell)).slice(0, 100))
-    if (!columns.length || columns.length > 8 || !rows.length || rows.length > 50) {
+    const header = headerIndex >= 0 ? rows.splice(headerIndex, 1)[0] : undefined
+    if (header && !rows.length) {
+      // A header-only table still contains readable text; preserve it as prose
+      // rather than replacing it with a warning callout.
+      header.forEach((cell) => addTextBlock(cell.children))
+      return
+    }
+    const columnCount = header?.length ?? Math.max(...rows.map((cells) => cells.length))
+    if (!header && rows.length === 1 && columnCount === 1) {
+      addTextBlock(rows[0][0].children)
+      return
+    }
+    const columns = header
+      ? header.map((cell) => plainText($.html(cell)).slice(0, 100))
+      : Array.from({length: columnCount}, (_, index) => `Column ${index + 1}`)
+    if (!header && /faq/i.test(pageTitle) && columnCount === 2) columns.splice(0, 2, 'Question', 'Answer')
+    if (!columns.length || columns.length > 8 || rows.length > 50) {
       warnings.push(`Table needs manual conversion (${columns.length} columns, ${rows.length} rows): ${pageTitle} (${pageId})`)
       addCallout('Table requires review', `A Confluence table exceeds the supported Sanity table limits. Review "${pageTitle}" in Confluence.`)
       return
     }
-    const normalizedRows = rows.map((cells) => Array.from({length: columns.length}, (_, index) => plainText($.html(cells[index])).slice(0, 500)))
+    const normalizedRows = rows.map((cells) => Array.from({length: columns.length}, (_, index) => plainText(cells[index] ? $.html(cells[index]) : '').slice(0, 500)))
     const caption = plainText($(node).find('caption').first().html() || '') || `Table from ${pageTitle}`
     body.push({_key: key('t'), _type: 'simpleTable', caption: caption.slice(0, 200), columns, rows: normalizedRows.map((cells) => ({_key: key('r'), _type: 'tableRow', cells}))})
   }
@@ -323,6 +374,20 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
       else if (['image', 'img'].includes(tag)) addImage(node)
       else if (tag === 'structured-macro') {
         const macro = attribute(node, 'name') || 'unknown'
+        if (macro === 'code') {
+          addCodeBlock(node)
+          continue
+        }
+        if (macro === 'toc') continue // The article page builds its own accessible table of contents.
+        if (macro === 'info') {
+          const titleParameter = (node.children || []).find((child) =>
+            localName(child) === 'parameter' && attribute(child, 'name') === 'title',
+          )
+          const richTextBody = findDescendant(node, 'rich-text-body')
+          const text = richTextBody ? plainText($.html(richTextBody)) : plainText($.html(node))
+          addCallout(decodeHtmlEntities(rawText(titleParameter)).trim() || 'Information', text, 'info')
+          continue
+        }
         warnings.push(`Unsupported Confluence macro "${macro}": ${pageTitle} (${pageId})`)
         addCallout(`Confluence macro requires review: ${macro}`, plainText($.html(node)))
       } else if (['div', 'section', 'article', 'ac', 'span'].includes(tag) || node.children?.length) walk(node.children)

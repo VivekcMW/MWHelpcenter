@@ -65,6 +65,7 @@ export function visibleBodyText(body: unknown): string {
         return span._type === 'span' ? string(span.text) : ''
       }).join('')]
       case 'callout': return [string(block.title), string(block.text)]
+      case 'codeBlock': return [string(block.code)]
       case 'procedure': return [string(block.title), ...array(block.steps).flatMap((step) => {
         const item = object(step)
         return [string(item.title), string(item.description)]

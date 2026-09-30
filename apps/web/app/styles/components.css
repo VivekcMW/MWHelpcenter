@@ -96,6 +96,28 @@
 :is(.mw-callout--tip, .callout-tip) { background: var(--mw-tip-bg); color: var(--mw-tip-text); border-color: var(--mw-tip-text); }
 :is(.mw-callout--warning, .callout-warning) { background: var(--mw-warning-bg); color: var(--mw-warning-text); border-color: var(--mw-warning-text); }
 
+.article-code-block {
+  margin-block: var(--mw-space-6);
+  overflow: hidden;
+  border: 1px solid var(--mw-border);
+  border-radius: var(--mw-radius);
+  background: var(--mw-gray-900);
+}
+.article-code-block pre {
+  margin: 0;
+  overflow-x: auto;
+  padding: var(--mw-space-5);
+  color: var(--mw-gray-100);
+  font: var(--mw-text-sm) / 1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre;
+}
+.article-code-block figcaption {
+  padding: var(--mw-space-2) var(--mw-space-5);
+  border-top: 1px solid var(--mw-gray-800);
+  color: var(--mw-gray-100);
+  font-size: var(--mw-text-xs);
+}
+
 :is(.mw-btn, .button, .mw-input, .mw-select, .mw-card--hoverable):focus-visible {
   outline: 2px solid var(--mw-focus);
   outline-offset: 3px;

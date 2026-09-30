@@ -7,6 +7,7 @@ const collectionFields = `_id, title, "slug": slug.current, description, languag
 const articleSummaryFields = `_id, title, "slug": slug.current, summary, language,
   "productSlugs": coalesce(products[]->slug.current, []),
   defined(primaryCollection->slug.current) => {"collectionSlug": primaryCollection->slug.current},
+  "additionalCollectionSlugs": coalesce(collections[]->slug.current, []),
   contentType, defined(reviewedAt) => {reviewedAt}`
 
 // Nested fields are whitelisted too: never spread body, image assets or markDefs.
@@ -16,6 +17,7 @@ const bodyFields = `_key, _type,
     children[]{_key, _type, text, marks}, markDefs[]{_key, _type, href}
   },
   _type == "callout" => {tone, defined(title) => {title}, text},
+  _type == "codeBlock" => {defined(language) => {language}, code},
   _type == "imageWithCaption" => {
     image{_type, asset->{_id, url},
       defined(crop) => {crop{top, bottom, left, right}},
@@ -58,6 +60,7 @@ export const SEARCH_ARTICLES_QUERY = `*[_type == "article" && ${visible}] | orde
   ${articleSummaryFields}, body[]{_type,
     _type == "block" => {children[_type == "span"]{_type, text}},
     _type == "callout" => {title, text},
+    _type == "codeBlock" => {code},
     _type == "procedure" => {title, steps[]{title, description}},
     _type == "simpleTable" => {caption, columns, rows[]{cells}},
     _type == "imageWithCaption" => {caption},

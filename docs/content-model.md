@@ -16,7 +16,7 @@ All six document types include `language`; Studio and the web app support Englis
 | --- | --- | --- |
 | `product` | `title`, `slug`, `description`, stable `icon` key, nonnegative integer `order`, `language` | Product cards and landing pages; sorted by order then title. The home page currently chooses icons by product slug, not the stored icon key. |
 | `collection` | `title`, `slug`, `description`, optional `product` reference, `language` | Collection landing page. Missing product means a shared collection; the public result flattens a linked product to `productSlug`. |
-| `article` | `title`, `slug`, `summary`, `language`, required `translationGroupId`, required `primaryCollection`, one or more unique `products`, `contentType`, `body`, optional `reviewedAt`, `firstPublishedAt`, `seo` | Detail pages and summary lists; references become `collectionSlug` and `productSlugs`. |
+| `article` | `title`, `slug`, `summary`, `language`, required `translationGroupId`, required `primaryCollection`, optional additional `collections`, one or more unique `products`, `contentType`, `body`, optional `reviewedAt`, `firstPublishedAt`, `seo` | Detail pages and summary lists; references become `collectionSlug`, `additionalCollectionSlugs`, and `productSlugs`. |
 | `author` | Public `name`, optional `bio`, optional `portrait` using `imageWithCaption`, `language` | Schema only: no article-author reference, public author query, or author page is wired up. This is not an authentication identity. |
 | `siteSettings` | `title`, `description`, `language`, up to six unique `featuredProducts` | Schema only: no settings query or singleton enforcement; current site chrome and featured layout are not driven by it. |
 | `redirect` | Local absolute `from`/`to` paths, `statusCode` (301, 302, 307, 308), `language` | Schema only: no runtime lookup. Self-targets are rejected; chain/loop checks and deployment remain future work. |
@@ -36,12 +36,13 @@ Article `contentType` choices are `guide`, `faq`, `troubleshooting`, `overview`,
 
 ## Rich content → renderer mapping
 
-`richContent` is a Portable Text array. Its public `PortableTextBlock` union combines upstream text blocks with the eight custom root object types. Rendering is in `apps/web/app/components/content/rich-content.tsx`.
+`richContent` is a Portable Text array. Its public `PortableTextBlock` union combines upstream text blocks with the nine custom root object types. Rendering is in `apps/web/app/components/content/rich-content.tsx`.
 
 | Schema member | Public shape | Rendered output |
 | --- | --- | --- |
 | `block` | Key, style, list metadata, explicit spans and link annotations | Portable Text paragraphs, H2/H3, quotes, bullet/number lists, strong/emphasis/code. H2/H3 anchors use `section-<block key>` and appear in article navigation. |
 | `callout` | `tone` (`info`, `tip`, `warning`), optional `title`, required `text` | An `aside`, optional strong title, paragraph, and tone class; no raw HTML. |
+| `codeBlock` | Required `code`, optional `language` | Escaped text in a semantic `<pre><code>` block; no executable markup or syntax-highlighting runtime. |
 | `imageWithCaption` | `image.asset` projected to ID/URL, optional crop/hotspot, required `alt`, optional `caption` | Lazy-loaded image in a figure, optional figcaption. Only HTTPS `cdn.sanity.io/images/` URLs are accepted; width/format parameters are added. Crop/hotspot data is projected but not applied by the current renderer. |
 | `animatedImageWithCaption` | Original GIF, animated WebP, or APNG file asset, required `alt`, optional `caption` | Renders the original HTTPS Sanity file asset without image transformations, preserving animation frames. Only `cdn.sanity.io/files/` is accepted. |
 | `videoWithCaption` | MP4/WebM/Ogg video file, required title, optional poster/caption, WebVTT caption tracks and/or transcript | Native `<video controls>` player with metadata preload, no autoplay, optional poster/tracks, and expandable transcript. Studio requires captions or a transcript. |
@@ -60,7 +61,7 @@ The package exports catalog/detail queries `PRODUCTS_QUERY`, `PRODUCT_QUERY`, `C
 
 Every entry query excludes draft and version IDs. The web client additionally selects the published perspective. Field whitelists apply recursively to spans, annotations, custom body members, image assets, and SEO. There are no document spreads; adding a CMS field does not automatically expose it to readers. Optional properties are conditionally projected rather than deliberately filled with nulls.
 
-Article summaries omit bodies and SEO. Detail results add `body`, optional `translationGroupId`, and optional `seo`. New public fields require explicit changes to the contract and tests. `packages/content/tests/query-contract.test.ts` checks projection/filter expectations and fixture relationships; it does not prove live Sanity authorization or publishing behavior.
+Article summaries omit bodies and SEO. They include the primary and additional collection slugs. Detail results add `body`, optional `translationGroupId`, and optional `seo`. New public fields require explicit changes to the contract and tests. `packages/content/tests/query-contract.test.ts` checks projection/filter expectations and fixture relationships; it does not prove live Sanity authorization or publishing behavior.
 
 ## Demo content
 

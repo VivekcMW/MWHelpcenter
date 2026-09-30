@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Copy, Share2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -13,7 +13,7 @@ export function ShareGuide() {
   const [failed, setFailed] = useState(false)
   const request = useRef(0)
   const busy = useRef(false)
-  const inputId = useId()
+  const inputId = 'mw-share-guide-link'
 
   // A clipboard promise can settle after dismissal/navigation. Ignore stale work.
   useEffect(() => () => { request.current += 1 }, [])

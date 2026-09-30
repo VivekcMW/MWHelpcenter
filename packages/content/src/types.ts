@@ -28,6 +28,7 @@ export interface ArticleSummary {
   language: string
   productSlugs: string[]
   collectionSlug?: string
+  additionalCollectionSlugs?: string[]
   contentType: string
   reviewedAt?: string
 }
@@ -38,6 +39,13 @@ export interface Callout {
   tone: 'info' | 'tip' | 'warning'
   title?: string
   text: string
+}
+
+export interface CodeBlock {
+  _key: string
+  _type: 'codeBlock'
+  language?: string
+  code: string
 }
 
 export interface ImageWithCaption {
@@ -127,7 +135,7 @@ export interface SimpleTable {
 
 // Portable Text permits custom root objects, not only standard text blocks.
 // Preserve the upstream block definition while covering every Studio body member.
-export type PortableTextBlock = (TextBlock & {_type: 'block'}) | Callout | ImageWithCaption | AnimatedImageWithCaption | VideoWithCaption | AudioWithTranscript | DownloadableFile | Procedure | SimpleTable
+export type PortableTextBlock = (TextBlock & {_type: 'block'}) | Callout | CodeBlock | ImageWithCaption | AnimatedImageWithCaption | VideoWithCaption | AudioWithTranscript | DownloadableFile | Procedure | SimpleTable
 
 export interface Article extends ArticleSummary {
   body: PortableTextBlock[]

@@ -53,4 +53,11 @@ describe('article table of contents', () => {
     expect(container.querySelector('a[download="guide.pdf"]')?.getAttribute('href')).toBe('https://cdn.sanity.io/files/project/pdf/guide.pdf?dl=')
     expect(container.querySelector('video[aria-label="Unsafe video"]')).toBeNull()
   })
+
+  it('renders code blocks as escaped, readable preformatted text', () => {
+    const body: Article['body'] = [{_type: 'codeBlock', _key: 'code', language: 'bash', code: 'echo "<safe>"'}]
+    const {container} = render(<RichContent body={body} />)
+    expect(container.querySelector('pre code')?.textContent).toBe('echo "<safe>"')
+    expect(container.querySelector('figcaption')?.textContent).toBe('bash')
+  })
 })

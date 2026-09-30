@@ -38,7 +38,7 @@ describe('public query contract', () => {
   })
 
   it('locks down every public field whitelist', () => {
-    const fields = new Set(['_id', '_key', '_type', 'title', 'slug', 'description', 'icon', 'order', 'language', 'productSlug', 'summary', 'productSlugs', 'collectionSlug', 'contentType', 'reviewedAt', 'body', 'style', 'listItem', 'level', 'children', 'text', 'marks', 'markDefs', 'href', 'tone', 'image', 'asset', 'url', 'crop', 'top', 'bottom', 'left', 'right', 'hotspot', 'x', 'y', 'width', 'height', 'alt', 'caption', 'steps', 'columns', 'rows', 'cells', 'translationGroupId', 'seo', 'file', 'mimeType', 'originalFilename', 'size', 'video', 'poster', 'captions', 'label', 'transcript', 'audio'])
+    const fields = new Set(['_id', '_key', '_type', 'title', 'slug', 'description', 'icon', 'order', 'language', 'productSlug', 'summary', 'productSlugs', 'collectionSlug', 'additionalCollectionSlugs', 'contentType', 'reviewedAt', 'body', 'style', 'listItem', 'level', 'children', 'text', 'marks', 'markDefs', 'href', 'tone', 'image', 'asset', 'url', 'crop', 'top', 'bottom', 'left', 'right', 'hotspot', 'x', 'y', 'width', 'height', 'alt', 'caption', 'steps', 'columns', 'rows', 'cells', 'translationGroupId', 'seo', 'file', 'mimeType', 'originalFilename', 'size', 'video', 'poster', 'captions', 'label', 'transcript', 'audio', 'code'])
     for (const query of Object.values(queries)) {
       const projection = query.slice(query.indexOf('{'))
       const withoutPredicates = projection.replace(/defined\([^)]*\)\s*=>/g, '').replace(/_type\s*==\s*"[^"]+"\s*=>/g, '')
@@ -53,6 +53,7 @@ describe('search projection runtime contract', () => {
   const body = [
     { _type: 'block', _key: 'private-key', style: 'h2', children: [{ _type: 'span', _key: 'span-key', text: 'Visible linked text', marks: ['link'] }, { _type: 'secret', text: 'Hidden inline text' }], markDefs: [{ _type: 'link', href: 'https://private-url.test' }] },
     { _type: 'callout', title: 'Notice', text: 'Visible notice', tone: 'info', internal: 'private' },
+    { _type: 'codeBlock', language: 'bash', code: 'echo visible-code', internal: 'private' },
     { _type: 'procedure', title: 'Procedure', steps: [{ _key: 'step-key', title: 'Step', description: 'Visible step', internal: 'private' }] },
     { _type: 'simpleTable', caption: 'Table caption', columns: ['Column'], rows: [{ _key: 'row-key', cells: ['Cell'], internal: 'private' }] },
     { _type: 'imageWithCaption', caption: 'Image caption', alt: 'private alt', image: { asset: { _ref: 'asset-id' } } },
@@ -64,6 +65,7 @@ describe('search projection runtime contract', () => {
   const expectedBody = [
     { _type: 'block', children: [{ _type: 'span', text: 'Visible linked text' }] },
     { _type: 'callout', title: 'Notice', text: 'Visible notice' },
+    { _type: 'codeBlock', code: 'echo visible-code' },
     { _type: 'procedure', title: 'Procedure', steps: [{ title: 'Step', description: 'Visible step' }] },
     { _type: 'simpleTable', caption: 'Table caption', columns: ['Column'], rows: [{ cells: ['Cell'] }] },
     { _type: 'imageWithCaption', caption: 'Image caption' },
@@ -74,7 +76,7 @@ describe('search projection runtime contract', () => {
   ]
   const article = {
     _type: 'article', _id: 'published-en', language: 'en', title: 'Guide', slug: { current: 'guide' }, summary: 'Summary',
-    products: [{ _ref: 'inventory' }], primaryCollection: { _ref: 'collection' }, contentType: 'guide', body,
+    products: [{ _ref: 'inventory' }], primaryCollection: { _ref: 'collection' }, collections: [{_ref: 'shared-collection'}], contentType: 'guide', body,
     seo: { title: 'private SEO' }, translationGroupId: 'private-group', secret: 'private',
   }
   const dataset = [
@@ -84,6 +86,7 @@ describe('search projection runtime contract', () => {
     { ...article, _id: 'other-type', _type: 'product' },
     { _id: 'inventory', _type: 'product', slug: { current: 'inventory' } },
     { _id: 'collection', _type: 'collection', slug: { current: 'getting-started' } },
+    { _id: 'shared-collection', _type: 'collection', slug: { current: 'best-practices' } },
     { _id: 'asset-id', _type: 'sanity.imageAsset', url: 'https://private-asset.test' },
   ]
 
@@ -91,7 +94,7 @@ describe('search projection runtime contract', () => {
     const value = await groq.evaluate(groq.parse(queries.SEARCH_ARTICLES_QUERY), { dataset, params: { language } })
     expect(await value.get()).toEqual([{
       _id: `published-${language}`, language, title: 'Guide', slug: 'guide', summary: 'Summary',
-      productSlugs: ['inventory'], collectionSlug: 'getting-started', contentType: 'guide', body: expectedBody,
+      productSlugs: ['inventory'], collectionSlug: 'getting-started', additionalCollectionSlugs: ['best-practices'], contentType: 'guide', body: expectedBody,
     }])
   })
 
@@ -99,7 +102,7 @@ describe('search projection runtime contract', () => {
     const value = await groq.evaluate(groq.parse(queries.ARTICLES_QUERY), { dataset, params: { language: 'en' } })
     expect(await value.get()).toEqual([{
       _id: 'published-en', language: 'en', title: 'Guide', slug: 'guide', summary: 'Summary',
-      productSlugs: ['inventory'], collectionSlug: 'getting-started', contentType: 'guide',
+      productSlugs: ['inventory'], collectionSlug: 'getting-started', additionalCollectionSlugs: ['best-practices'], contentType: 'guide',
     }])
   })
 

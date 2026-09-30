@@ -1,4 +1,3 @@
-import { useId } from 'react'
 import { Form, useLocation, useNavigation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, Globe } from 'lucide-react'
@@ -6,7 +5,9 @@ import { locales, type Locale } from '../../i18n/config'
 import { Spinner } from './spinner'
 
 export function LanguageSwitcher({ locale }: { readonly locale: Locale }) {
-  const id = useId()
+  // There is exactly one language control per document. A fixed ID keeps its
+  // label/select relationship stable across SSR adapters and hydration.
+  const id = 'mw-language-select'
   const { t } = useTranslation('navigation')
   const location = useLocation()
   const navigation = useNavigation()

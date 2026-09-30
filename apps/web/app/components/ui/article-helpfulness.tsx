@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import { useActionData, useFetcher } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { CheckCircle2, ThumbsDown, ThumbsUp } from 'lucide-react'
@@ -12,7 +12,7 @@ export function ArticleHelpfulness({ locale, slug, saved }: {
   readonly saved: HelpfulnessView
 }) {
   const { t } = useTranslation('feedback')
-  const id = useId()
+  const id = `mw-article-helpfulness-${locale}-${slug}`
   const fetcher = useFetcher<HelpfulnessResult>()
   // Document submissions render the same confirmation without JavaScript.
   const documentResult = useActionData<HelpfulnessResult>()

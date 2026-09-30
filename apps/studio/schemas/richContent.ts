@@ -115,6 +115,15 @@ export const simpleTable = defineType({
   }),
 })
 
+export const codeBlock = defineType({
+  name: 'codeBlock', title: 'Code block', type: 'object',
+  fields: [
+    defineField({name: 'language', type: 'string', validation: (rule) => rule.max(40)}),
+    defineField({name: 'code', type: 'text', rows: 10, validation: (rule) => rule.required().max(50000)}),
+  ],
+  preview: {select: {title: 'language'}, prepare: ({title}) => ({title: title ? `Code (${title})` : 'Code block'})},
+})
+
 export const richContent = defineType({
   name: 'richContent', title: 'Rich content', type: 'array',
   of: [
@@ -137,5 +146,6 @@ export const richContent = defineType({
     defineArrayMember({type: 'downloadableFile'}),
     defineArrayMember({type: 'procedure'}),
     defineArrayMember({type: 'simpleTable'}),
+    defineArrayMember({type: 'codeBlock'}),
   ],
 })

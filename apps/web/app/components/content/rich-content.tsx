@@ -1,5 +1,5 @@
 import { PortableText, type PortableTextComponents } from '@portabletext/react'
-import type { AnimatedImageWithCaption, Article, AudioWithTranscript, Callout, DownloadableFile, ImageWithCaption, Procedure, SanityFileAsset, SimpleTable, VideoWithCaption } from '@mw/content'
+import type { AnimatedImageWithCaption, Article, AudioWithTranscript, Callout, CodeBlock, DownloadableFile, ImageWithCaption, Procedure, SanityFileAsset, SimpleTable, VideoWithCaption } from '@mw/content'
 import { safeHref, sanityFileUrl, sanityImageUrl } from '../../lib/security/urls'
 
 const animatedImageTypes = new Set(['image/gif', 'image/webp', 'image/apng'])
@@ -37,6 +37,7 @@ const components: Partial<PortableTextComponents> = {
   },
   types: {
     callout: ({ value }: { value: Callout }) => <aside className={`callout callout-${value.tone}`}>{value.title && <strong>{value.title}</strong>}<p>{value.text}</p></aside>,
+    codeBlock: ({ value }: { value: CodeBlock }) => <figure className="article-code-block"><pre><code>{value.code}</code></pre>{value.language && <figcaption>{value.language}</figcaption>}</figure>,
     procedure: ({ value }: { value: Procedure }) => <section><h2 id={`section-${value._key}`}>{value.title}</h2><ol className="procedure">{value.steps.map((step) => <li key={step._key}><h3 id={`section-${value._key}-step-${step._key}`}>{step.title}</h3><p>{step.description}</p></li>)}</ol></section>,
     simpleTable: ({ value }: { value: SimpleTable }) => <div className="table-scroll" tabIndex={0} role="region" aria-label={value.caption}><table><caption>{value.caption}</caption><thead><tr>{value.columns.map((column, index) => <th scope="col" key={`${index}-${column}`}>{column}</th>)}</tr></thead><tbody>{value.rows.map((row) => <tr key={row._key}>{row.cells.map((cell, index) => <td key={index}>{cell}</td>)}</tr>)}</tbody></table></div>,
     imageWithCaption: ({ value }: { value: ImageWithCaption }) => {

@@ -1,4 +1,4 @@
-import { Link, useLoaderData, type LoaderFunctionArgs, type MetaFunction } from 'react-router'
+import { Link, redirect, useLoaderData, type LoaderFunctionArgs, type MetaFunction } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { ChevronRight } from 'lucide-react'
 import { requireLocale, localePath } from '../i18n/config'
@@ -10,8 +10,13 @@ export async function loader({ params }: LoaderFunctionArgs) {
   const locale = requireLocale(params.locale)
   const catalog = await getCatalog(locale)
   const collection = catalog.collections.find((item) => item.slug === params.slug)
-  if (!collection) throw new Response('Not found', { status: 404 })
-  return { locale, collection, articles: catalog.articles.filter((item) => item.collectionSlug === collection.slug) }
+  if (!collection) {
+    if (locale === 'ja' && ['getting-started', 'best-practices'].includes(params.slug ?? '')) {
+      throw redirect(`${localePath(locale)}?translation=unavailable`)
+    }
+    throw new Response('Not found', { status: 404 })
+  }
+  return { locale, collection, articles: catalog.articles.filter((item) => item.collectionSlug === collection.slug || item.additionalCollectionSlugs?.includes(collection.slug)) }
 }
 export const meta: MetaFunction<typeof loader> = ({ loaderData: data }) => {
   const siteTitle = createI18n(data?.locale ?? 'en').t('siteTitle')

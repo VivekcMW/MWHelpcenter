@@ -20,6 +20,21 @@ describe('Confluence migration transformation', () => {
     expect(result.body[4].rows[0].cells).toEqual(['Name', 'Demo'])
   })
 
+  it('decodes HTML entities consistently in body text, table cells, and summaries', () => {
+    const html = '<p>Media &mdash; then save &amp; close.</p><table><tr><th>Mode</th><th>Action</th></tr><tr><td>Read &amp; write</td><td>Save &mdash; continue</td></tr></table>'
+    const parsed = parseConfluenceBody(html, {pageId: '101', pageTitle: 'Entity handling'})
+    const snapshot = {pages: [
+      {id: 'cms-root', title: 'CMS', ancestors: [{id: 'help-center', title: 'Help Center'}]},
+      {id: '101', title: 'Entity handling', storageHtml: html, ancestors: [{id: 'help-center', title: 'Help Center'}, {id: 'cms-root', title: 'CMS'}]},
+    ]}
+    const article = buildDocuments(snapshot).articles[0]
+
+    expect(parsed.body[0].children[0].text).toBe('Media — then save & close.')
+    expect(parsed.body[1].rows[0].cells).toEqual(['Read & write', 'Save — continue'])
+    expect(article.summary).toContain('Media — then save & close.')
+    expect(JSON.stringify(parsed.body)).not.toContain('&mdash;')
+  })
+
   it('uploads a referenced Confluence image as the supported imageWithCaption member', () => {
     const source = '<ac:image ac:alt="Dashboard screenshot"><ri:attachment ri:filename="dashboard.png"/></ac:image>'
     const result = parseConfluenceBody(source, {
@@ -36,6 +51,28 @@ describe('Confluence migration transformation', () => {
       alt: 'Dashboard screenshot',
       image: {asset: {_ref: 'image-asset-id'}},
     })
+  })
+
+  it('converts code and info macros while omitting the redundant legacy table of contents', () => {
+    const source = `<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">bash</ac:parameter><ac:plain-text-body><![CDATA[echo "&mdash;"
+ls -la]]></ac:plain-text-body></ac:structured-macro><ac:structured-macro ac:name="info"><ac:rich-text-body><p>Helpful &mdash; note</p></ac:rich-text-body></ac:structured-macro><ac:structured-macro ac:name="toc"><ac:parameter ac:name="maxLevel">3</ac:parameter></ac:structured-macro>`
+    const result = parseConfluenceBody(source, {pageId: '202', pageTitle: 'Macro handling'})
+
+    expect(result.warnings).toEqual([])
+    expect(result.body).toEqual([
+      {_key: 'code1', _type: 'codeBlock', language: 'bash', code: 'echo "&mdash;"\nls -la'},
+      {_key: 'c2', _type: 'callout', tone: 'info', title: 'Information', text: 'Helpful — note'},
+    ])
+  })
+
+  it('preserves headerless FAQ tables instead of dropping their only row', () => {
+    const faq = parseConfluenceBody('<table><tr><td>How do I begin?</td><td>Open the dashboard.</td></tr></table>', {pageId: '203', pageTitle: 'Measure Platform FAQ'})
+    const layout = parseConfluenceBody('<table><tr><td>Dashboard overview</td></tr></table>', {pageId: '204', pageTitle: 'Dashboard overview'})
+
+    expect(faq.warnings).toEqual([])
+    expect(faq.body[0]).toMatchObject({_type: 'simpleTable', columns: ['Question', 'Answer'], rows: [{cells: ['How do I begin?', 'Open the dashboard.']}]})
+    expect(layout.warnings).toEqual([])
+    expect(layout.body[0].children[0].text).toBe('Dashboard overview')
   })
 
   it('does not import scripts and flags images without uploaded assets', () => {
