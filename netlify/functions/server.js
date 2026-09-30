@@ -56,6 +56,36 @@ export default async (event, context) => {
 
     // Load the build at runtime
     const build = await loadBuild()
+    
+    // DIAGNOSTIC: Check what exports are actually available
+    const buildExports = Object.keys(build)
+    const hasRoutes = 'routes' in build
+    const hasBuildRoutes = build.routes ? Object.keys(build.routes).length : 0
+    
+    if (!hasRoutes || hasBuildRoutes === 0) {
+      console.error(`[${new Date().toISOString()}] WARNING: routes not found in build!`, {
+        hasRoutesProperty: hasRoutes,
+        routeCount: hasBuildRoutes,
+        availableExports: buildExports.slice(0, 20),
+      })
+      
+      // Return diagnostic error page
+      return new Response(`<html><body>
+        <h1>Diagnostic: Build Module Issue</h1>
+        <p>The build module does not have routes.</p>
+        <pre>
+Available Exports: ${JSON.stringify(buildExports, null, 2)}
+Has routes property: ${hasRoutes}
+Routes count: ${hasBuildRoutes}
+build.entry exists: ${!!build.entry}
+build.entry.module exists: ${!!build.entry?.module}
+build.entry.module.default exists: ${!!build.entry?.module?.default}
+        </pre>
+      </body></html>`, {
+        status: 500,
+        headers: { 'Content-Type': 'text/html' }
+      })
+    }
 
     // Parse the request
     const rawPath = event.path || '/'
