@@ -1,9 +1,9 @@
-import { data, Link, useLoaderData, type ActionFunctionArgs, type HeadersFunction, type LoaderFunctionArgs, type MetaFunction } from 'react-router'
+import { data, Link, redirect, useLoaderData, type ActionFunctionArgs, type HeadersFunction, type LoaderFunctionArgs, type MetaFunction } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { ArrowUpRight, ChevronRight } from 'lucide-react'
 import { requireLocale, localePath, formatDate } from '../i18n/config'
 import { createI18n } from '../i18n/instance'
-import { getArticle, getCatalog } from '../lib/content.server'
+import { getArticle, getArticleRedirect, getCatalog } from '../lib/content.server'
 import { RichContent, contentHeadings } from '../components/content/rich-content'
 import { ArticleList } from '../components/ui/article-list'
 import { ShareGuide } from '../components/ui/share-guide'
@@ -14,7 +14,11 @@ import type { HelpfulnessResult } from '../features/helpfulness'
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const locale = requireLocale(params.locale)
   const article = await getArticle(locale, params.slug ?? '')
-  if (!article) throw new Response('Not found', { status: 404 })
+  if (!article) {
+    const legacy = await getArticleRedirect(locale, new URL(request.url).pathname)
+    if (legacy) throw redirect(legacy.to, {status: legacy.statusCode})
+    throw new Response('Not found', { status: 404 })
+  }
   const catalog = await getCatalog(locale)
   const { enabled, demo, vote, reason } = await getHelpfulnessState(request, article._id, locale)
   return {

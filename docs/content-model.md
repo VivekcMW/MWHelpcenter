@@ -19,7 +19,7 @@ All six document types include `language`; Studio and the web app support Englis
 | `article` | `title`, `slug`, `summary`, `language`, required `translationGroupId`, required `primaryCollection`, optional additional `collections`, one or more unique `products`, `contentType`, `body`, optional `reviewedAt`, `firstPublishedAt`, `seo` | Detail pages and summary lists; references become `collectionSlug`, `additionalCollectionSlugs`, and `productSlugs`. |
 | `author` | Public `name`, optional `bio`, optional `portrait` using `imageWithCaption`, `language` | Schema only: no article-author reference, public author query, or author page is wired up. This is not an authentication identity. |
 | `siteSettings` | `title`, `description`, `language`, up to six unique `featuredProducts` | Schema only: no settings query or singleton enforcement; current site chrome and featured layout are not driven by it. |
-| `redirect` | Local absolute `from`/`to` paths, `statusCode` (301, 302, 307, 308), `language` | Schema only: no runtime lookup. Self-targets are rejected; chain/loop checks and deployment remain future work. |
+| `redirect` | Local absolute `from`/`to` paths, `statusCode` (301, 302, 307, 308), `language` | Missing article slugs resolve through published locale-scoped redirects. Self-targets are rejected; chain/loop checks and legacy-host routing remain future work. |
 
 Article `contentType` choices are `guide`, `faq`, `troubleshooting`, `overview`, and `best-practice`. These classify articles; they do not select separate rendering engines.
 

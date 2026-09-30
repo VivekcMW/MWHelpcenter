@@ -53,6 +53,7 @@ export const PRODUCTS_QUERY = `*[_type == "product" && ${visible}] | order(order
 export const PRODUCT_QUERY = `*[_type == "product" && ${visible} && slug.current == $slug][0]{${productFields}}`
 export const COLLECTIONS_QUERY = `*[_type == "collection" && ${visible}] | order(title asc){${collectionFields}}`
 export const COLLECTION_QUERY = `*[_type == "collection" && ${visible} && slug.current == $slug][0]{${collectionFields}}`
+export const REDIRECT_QUERY = `*[_type == "redirect" && ${visible} && from == $from][0]{from, to, statusCode, language}`
 export const ARTICLES_QUERY = `*[_type == "article" && ${visible}] | order(title asc){${articleSummaryFields}}`
 // Search-only, server-side projection. No annotation URLs, assets, alt text,
 // keys, SEO or editorial metadata; only text rendered by supported body types.

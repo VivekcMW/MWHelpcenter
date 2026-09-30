@@ -38,7 +38,7 @@ describe('public query contract', () => {
   })
 
   it('locks down every public field whitelist', () => {
-    const fields = new Set(['_id', '_key', '_type', 'title', 'slug', 'description', 'icon', 'order', 'language', 'productSlug', 'summary', 'productSlugs', 'collectionSlug', 'additionalCollectionSlugs', 'contentType', 'reviewedAt', 'body', 'style', 'listItem', 'level', 'children', 'text', 'marks', 'markDefs', 'href', 'tone', 'image', 'asset', 'url', 'crop', 'top', 'bottom', 'left', 'right', 'hotspot', 'x', 'y', 'width', 'height', 'alt', 'caption', 'steps', 'columns', 'rows', 'cells', 'translationGroupId', 'seo', 'file', 'mimeType', 'originalFilename', 'size', 'video', 'poster', 'captions', 'label', 'transcript', 'audio', 'code'])
+    const fields = new Set(['_id', '_key', '_type', 'title', 'slug', 'description', 'icon', 'order', 'language', 'productSlug', 'summary', 'productSlugs', 'collectionSlug', 'additionalCollectionSlugs', 'contentType', 'reviewedAt', 'body', 'style', 'listItem', 'level', 'children', 'text', 'marks', 'markDefs', 'href', 'tone', 'image', 'asset', 'url', 'crop', 'top', 'bottom', 'left', 'right', 'hotspot', 'x', 'y', 'width', 'height', 'alt', 'caption', 'steps', 'columns', 'rows', 'cells', 'translationGroupId', 'seo', 'file', 'mimeType', 'originalFilename', 'size', 'video', 'poster', 'captions', 'label', 'transcript', 'audio', 'code', 'from', 'to', 'statusCode'])
     for (const query of Object.values(queries)) {
       const projection = query.slice(query.indexOf('{'))
       const withoutPredicates = projection.replace(/defined\([^)]*\)\s*=>/g, '').replace(/_type\s*==\s*"[^"]+"\s*=>/g, '')

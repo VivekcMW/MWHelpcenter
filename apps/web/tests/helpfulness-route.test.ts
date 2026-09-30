@@ -3,11 +3,11 @@ import { articles, collections, products, japaneseArticles, japaneseCollections,
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from 'react-router'
 import type { HelpfulnessResult, HelpfulnessView } from '../app/features/helpfulness'
 import type { Locale } from '../app/i18n/config'
-import { getArticle, getCatalog } from '../app/lib/content.server'
+import { getArticle, getArticleRedirect, getCatalog } from '../app/lib/content.server'
 import { getHelpfulnessState, submitHelpfulness } from '../app/lib/helpfulness.server'
 import { action, headers, loader } from '../app/routes/article'
 
-vi.mock('../app/lib/content.server', () => ({ getArticle: vi.fn(), getCatalog: vi.fn() }))
+vi.mock('../app/lib/content.server', () => ({ getArticle: vi.fn(), getArticleRedirect: vi.fn(), getCatalog: vi.fn() }))
 vi.mock('../app/lib/helpfulness.server', () => ({ getHelpfulnessState: vi.fn(), submitHelpfulness: vi.fn() }))
 // These factories are deliberately fatal if an accidental real service import
 // reaches infrastructure. No environment configuration or database is needed.
@@ -118,7 +118,9 @@ describe.each(['en', 'ja'] as const)('article helpfulness route (%s)', (locale: 
 
   it('returns 404 before helpfulness/catalog reads when the article is absent', async () => {
     vi.mocked(getArticle).mockResolvedValue(null)
+    vi.mocked(getArticleRedirect).mockResolvedValue(null)
     await expect(loader(args(locale))).rejects.toMatchObject({ status: 404 })
+    expect(getArticleRedirect).toHaveBeenCalledExactlyOnceWith(locale, `/${locale}/articles/getting-started`)
     expect(getHelpfulnessState).not.toHaveBeenCalled()
     expect(getCatalog).not.toHaveBeenCalled()
   })

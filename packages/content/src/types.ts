@@ -20,6 +20,13 @@ export interface Collection {
   productSlug?: string
 }
 
+export interface ContentRedirect {
+  from: string
+  to: string
+  statusCode: 301 | 302 | 307 | 308
+  language: string
+}
+
 export interface ArticleSummary {
   _id: string
   title: string
