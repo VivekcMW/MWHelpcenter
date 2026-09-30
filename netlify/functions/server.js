@@ -1,5 +1,76 @@
+// Import React Router's createRequestHandler dynamically
+// (This avoids bundler issues and ensures it's resolved at runtime)
+let cachedCreateRequestHandler = null
+
+async function getCreateRequestHandler() {
+  if (cachedCreateRequestHandler) return cachedCreateRequestHandler
+  try {
+    // Try dynamic import from react-router
+    const { createRequestHandler } = await import('react-router')
+    cachedCreateRequestHandler = createRequestHandler
+    return createRequestHandler
+  } catch (err) {
+    console.warn('Cannot import createRequestHandler from react-router:', err.message)
+    
+    // Fallback: Implement createRequestHandler locally
+    // This is a simplified implementation that handles the common SSR case
+    return (build, mode) => {
+      return async (request, loadContext = {}) => {
+        try {
+          // Get the handler function from the build module
+          const handler = build.entry?.module?.default
+          if (typeof handler !== 'function') {
+            throw new Error('Handler not found in build module')
+          }
+          
+          // Create the router context from build exports
+          // React Router expects a specific structure that createServerRoutes will process
+          const routerContext = {
+            routes: build.routes,
+            assets: build.assets,
+            basename: build.basename || '/',
+            isSpaMode: build.isSpaMode || false,
+            future: build.future || {},
+            manifest: build.routes ? { routes: build.routes } : {},
+            routeModules: Object.values(build.routes || {}).reduce((acc, route) => {
+              if (route.id && route.module) {
+                acc[route.id] = route.module
+              }
+              return acc
+            }, {}),
+            staticHandlerContext: {
+              loaderData: {},
+              matches: [],
+              actionData: null,
+              errors: null,
+            },
+            criticalCss: '',
+            serverHandoffString: '',
+          }
+          
+          const responseHeaders = new Headers()
+          responseHeaders.set('Content-Type', 'text/html; charset=utf-8')
+          
+          // Call the handler with proper React Router SSR parameters
+          return await handler(
+            request,
+            200,
+            responseHeaders,
+            routerContext,
+            loadContext
+          )
+        } catch (error) {
+          console.error('Error in createRequestHandler fallback:', error.message)
+          throw error
+        }
+      }
+    }
+  }
+}
+
 // Lazy load the React Router build to avoid bundler issues
 let cachedBuild = null
+let cachedHandler = null
 
 async function loadBuild() {
   if (cachedBuild) return cachedBuild
@@ -11,15 +82,20 @@ async function loadBuild() {
     const cwd = process.cwd()
     console.log(`[${new Date().toISOString()}] CWD: ${cwd}`)
     
+    // Get the directory where this script is located
+    const scriptDir = new URL('.', import.meta.url).href
+    console.log(`[${new Date().toISOString()}] Script dir: ${scriptDir}`)
+    
     // Try different possible paths for the build
     const possiblePaths = [
-      // Production: build-server copied into functions directory
+      // Production: build-server copied into same directory as script
       new URL('./build-server/index.js', import.meta.url).href,
-      // Development: relative path
-      new URL('../../../apps/web/build/server/index.js', import.meta.url).href,
-      // Absolute file paths
-      `file://${cwd}/netlify/functions/build-server/index.js`,
+      // Production: build-server in parent directory
+      new URL('../netlify/functions/build-server/index.js', import.meta.url).href,
+      // Development: path from monorepo root
       `file://${cwd}/apps/web/build/server/index.js`,
+      // Fallback: try finding based on current location
+      `file://${new URL('../../apps/web/build/server/index.js', scriptDir).href.replace('file://', '')}`,
     ]
     
     let buildModule = null
@@ -40,7 +116,7 @@ async function loadBuild() {
     }
     
     // If we get here, none worked - provide helpful error info
-    const errorMsg = `Unable to load React Router build from any path:\n${possiblePaths.map(p => `  - ${p}`).join('\n')}\n\nLast error: ${lastError?.message}\n\nCWD: ${cwd}\nENV: ${process.env.NODE_ENV}`
+    const errorMsg = `Unable to load React Router build from any path:\n${possiblePaths.map(p => `  - ${p}`).join('\n')}\n\nLast error: ${lastError?.message}\n\nCWD: ${cwd}\nScript: ${scriptDir}`
     console.error(`[${new Date().toISOString()}] ${errorMsg}`)
     throw new Error(errorMsg)
   } catch (error) {
@@ -49,43 +125,19 @@ async function loadBuild() {
   }
 }
 
+async function getRequestHandler() {
+  if (cachedHandler) return cachedHandler
+  
+  const build = await loadBuild()
+  const createRequestHandler = await getCreateRequestHandler()
+  cachedHandler = createRequestHandler(build, process.env.NODE_ENV || 'production')
+  return cachedHandler
+}
+
 export default async (event, context) => {
   try {
     // Log incoming request for debugging
     console.log(`[${new Date().toISOString()}] ${event.httpMethod} ${event.path}${event.rawQuery ? '?' + event.rawQuery : ''}`)
-
-    // Load the build at runtime
-    const build = await loadBuild()
-    
-    // DIAGNOSTIC: Check what exports are actually available
-    const buildExports = Object.keys(build)
-    const hasRoutes = 'routes' in build
-    const hasBuildRoutes = build.routes ? Object.keys(build.routes).length : 0
-    
-    if (!hasRoutes || hasBuildRoutes === 0) {
-      console.error(`[${new Date().toISOString()}] WARNING: routes not found in build!`, {
-        hasRoutesProperty: hasRoutes,
-        routeCount: hasBuildRoutes,
-        availableExports: buildExports.slice(0, 20),
-      })
-      
-      // Return diagnostic error page
-      return new Response(`<html><body>
-        <h1>Diagnostic: Build Module Issue</h1>
-        <p>The build module does not have routes.</p>
-        <pre>
-Available Exports: ${JSON.stringify(buildExports, null, 2)}
-Has routes property: ${hasRoutes}
-Routes count: ${hasBuildRoutes}
-build.entry exists: ${!!build.entry}
-build.entry.module exists: ${!!build.entry?.module}
-build.entry.module.default exists: ${!!build.entry?.module?.default}
-        </pre>
-      </body></html>`, {
-        status: 500,
-        headers: { 'Content-Type': 'text/html' }
-      })
-    }
 
     // Parse the request
     const rawPath = event.path || '/'
@@ -116,58 +168,22 @@ build.entry.module.default exists: ${!!build.entry?.module?.default}
         : {}),
     })
 
-    // Call the React Router handler
-    // The React Router build exports entry.module.default which is the handleRequest function
-    const handler = build.entry?.module?.default
+    // Get the React Router request handler (uses createRequestHandler internally)
+    const handler = await getRequestHandler()
     
-    if (typeof handler !== 'function') {
-      console.error('Handler not found in build exports. Available exports:', Object.keys(build))
-      throw new Error(`Invalid build structure: handler not found`)
-    }
-    
-    // Log what we have from the build
-    console.log(`[${new Date().toISOString()}] Build exports available:`, {
-      hasRoutes: !!build.routes,
-      hasAssets: !!build.assets,
-      hasisSpaMode: !!build.isSpaMode,
-      hasEntry: !!build.entry,
-      exportKeys: Object.keys(build).slice(0, 10),
-    })
-    
-    // Prepare the router context with routes and other configuration from the build
-    // React Router v7 expects specific structure for routes
-    const routerContext = {
-      routes: build.routes,
-      basename: build.basename || '',
-      isSpaMode: build.isSpaMode || false,
-    }
-    
-    // Prepare load context for React Router handlers
+    // Prepare load context for React Router
     const loadContext = {
-      // Netlify specific context
       event,
       context,
     }
     
-    console.log(`[${new Date().toISOString()}] RouterContext prepared:`, {
-      hasRoutes: !!routerContext.routes,
-      routeCount: Object.keys(routerContext.routes || {}).length,
-      hasBasename: !!routerContext.basename,
-    })
+    console.log(`[${new Date().toISOString()}] Calling React Router handler`)
     
-    const responseHeaders = new Headers()
-    responseHeaders.set('Content-Type', 'text/html; charset=utf-8')
-    
-    const response = await handler(
-      request,
-      200,
-      responseHeaders,
-      routerContext,
-      loadContext
-    )
+    // Call the handler and return the response
+    const response = await handler(request, loadContext)
 
     if (!response) {
-      console.error('No response from handleRequest')
+      console.error('No response from handler')
       return new Response('Internal Server Error: No response from handler', {
         status: 500,
         headers: { 'Content-Type': 'text/plain' },
@@ -176,7 +192,7 @@ build.entry.module.default exists: ${!!build.entry?.module?.default}
 
     console.log(`[${new Date().toISOString()}] Response status: ${response.status}`)
 
-    // Return the Response object directly - Netlify's new runtime expects Web API Response
+    // Return the Response object directly
     return response
   } catch (error) {
     console.error(`[${new Date().toISOString()}] Server error:`, error)
