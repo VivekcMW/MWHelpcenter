@@ -1,9 +1,42 @@
-// Import utilities for finding createRequestHandler
+// Import utilities
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import { dirname, resolve } from 'path'
 
 let cachedCreateRequestHandler = null
+let cachedBuild = null
+let cachedHandler = null
+
+async function getCreateRequestHandler() {
+  if (cachedCreateRequestHandler) return cachedCreateRequestHandler
+  
+  try {
+    // Try method 1: Direct dynamic import
+    try {
+      const { createRequestHandler } = await import('react-router')
+      cachedCreateRequestHandler = createRequestHandler
+      console.log('[createRequestHandler] Loaded via import()')
+      return createRequestHandler
+    } catch (err1) {
+      console.log('[createRequestHandler] import() failed:', err1.message)
+      
+      // Try method 2: Use createRequire from node_modules
+      try {
+        const require = createRequire(import.meta.url)
+        const { createRequestHandler } = require('react-router')
+        cachedCreateRequestHandler = createRequestHandler
+        console.log('[createRequestHandler] Loaded via createRequire()')
+        return createRequestHandler
+      } catch (err2) {
+        console.log('[createRequestHandler] createRequire() failed:', err2.message)
+        throw err2
+      }
+    }
+  } catch (error) {
+    console.error('[createRequestHandler] All import methods failed:', error.message)
+    throw error
+  }
+}
 
 async function getCreateRequestHandler() {
   if (cachedCreateRequestHandler) return cachedCreateRequestHandler
@@ -98,31 +131,43 @@ async function loadBuild() {
   if (cachedBuild) return cachedBuild
   
   try {
-    const { fileURLToPath: fileURLToPathFn } = await import('url')
-    const { dirname: dirnameFn, resolve: resolveFn } = await import('path')
-    
     // On Netlify, the server build is copied to netlify/functions/build-server/
     // by the build command. This script is at netlify/functions/server.mjs
     
     const cwd = process.cwd()
     const scriptFileUrl = import.meta.url  // file:///var/task/netlify/functions/server.mjs
-    const scriptPath = fileURLToPathFn(scriptFileUrl)  // /var/task/netlify/functions/server.mjs
-    const scriptDir = dirnameFn(scriptPath)  // /var/task/netlify/functions
+    const scriptPath = fileURLToPath(scriptFileUrl)  // /var/task/netlify/functions/server.mjs
+    const scriptDir = dirname(scriptPath)  // /var/task/netlify/functions
     
     console.log(`[${new Date().toISOString()}] Script path: ${scriptPath}`)
     console.log(`[${new Date().toISOString()}] Script dir: ${scriptDir}`)
     console.log(`[${new Date().toISOString()}] CWD: ${cwd}`)
     
+    // List what actually exists in the filesystem
+    try {
+      const { readdirSync } = await import('fs')
+      console.log(`[${new Date().toISOString()}] Contents of ${scriptDir}:`, readdirSync(scriptDir))
+    } catch (err) {
+      console.log(`[${new Date().toISOString()}] Could not list ${scriptDir}:`, err.message)
+    }
+    
+    try {
+      const { readdirSync } = await import('fs')
+      console.log(`[${new Date().toISOString()}] Contents of /var/task:`, readdirSync('/var/task').slice(0, 10))
+    } catch (err) {
+      console.log(`[${new Date().toISOString()}] Could not list /var/task:`, err.message)
+    }
+    
     // Try different possible paths for the build
     const possiblePaths = [
       // Path 1: build-server folder in the same directory as this script
-      resolveFn(scriptDir, 'build-server', 'index.js'),
+      resolve(scriptDir, 'build-server', 'index.js'),
       // Path 2: from monorepo root
-      resolveFn(cwd, 'apps', 'web', 'build', 'server', 'index.js'),
+      resolve(cwd, 'apps', 'web', 'build', 'server', 'index.js'),
       // Path 3: try relative to task root
-      resolveFn('/var/task', 'netlify', 'functions', 'build-server', 'index.js'),
+      resolve('/var/task', 'netlify', 'functions', 'build-server', 'index.js'),
       // Path 4: try in task root
-      resolveFn('/var/task', 'apps', 'web', 'build', 'server', 'index.js'),
+      resolve('/var/task', 'apps', 'web', 'build', 'server', 'index.js'),
     ]
     
     // Also create file:// URLs for import
