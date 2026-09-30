@@ -4,7 +4,7 @@
 
 ## Status and scope
 
-This is a Confluence Helpdesk → Sanity migration plan, **not an implemented importer or redirect script**. The signed-in Confluence inventory was inspected on 2026-09-30. It contains 182 current pages: one space overview, seven product-section pages, and 174 content pages, with 574 image attachments across 110 pages. The attachment inventory is 526 PNG and 48 JPEG files. Demo fixtures are original illustrative samples, not migrated documentation.
+The repository now includes a Confluence REST exporter and a dry-run-first Sanity draft importer. Redirect resolution is still not implemented. The signed-in Confluence inventory was inspected on 2026-09-30. It contains 182 current pages: one space overview, seven product-section pages, and 174 content pages, with 574 image attachments across 110 pages. The attachment inventory is 526 PNG and 48 JPEG files. Demo fixtures are original illustrative samples, not migrated documentation.
 
 The approved scope is all current content pages, transformed to Sanity **drafts only** for review. The Admin is the publication approver. Do not publish or expose migrated material automatically. Exclude the explicitly internal page and quarantine apparent obsolete/duplicate candidates until the Admin decides whether to exclude, merge, or retain them. The Confluence space overview has placeholder text and is not a public help article.
 
@@ -34,7 +34,8 @@ The new help-center folder is separate from the existing `movingwalls-help-page`
 
 ## 1. Obtain an authorized source export
 
-- Use an authorized Confluence Helpdesk space XML/HTML export or a scoped, read-only Confluence API credential. Do not copy a browser session cookie into scripts or source files.
+- Copy `.env.migration.example` to the ignored root `.env.migration`, then fill `CONFLUENCE_EMAIL` and `CONFLUENCE_API_TOKEN` using an authorized Atlassian API token with Helpdesk read access. Do not paste credentials into chat, commit the file, or copy a browser session cookie into scripts.
+- Run `pnpm confluence:migrate export`. This retrieves current Helpdesk pages, ancestor paths, labels, storage-format bodies, and each page's attachments through the REST API. It saves the snapshot and attachment files under the ignored `data/confluence-helpdesk/` directory.
 - Preserve page IDs, current page versions, ancestor paths, labels, storage-format body, attachment metadata, and original page URLs in a restricted migration snapshot/manifest.
 - The signed-in inventory confirmed 182 current pages and 574 image attachments. Space-wide attachment enumeration returned a server error, but all 182 per-page attachment listings succeeded; use per-page listing in the importer.
 - Keep source exports and manifests in approved restricted storage outside the public web root and Git. Exclude comments, user profile details, credentials, and confidential content from the public dataset.
@@ -65,13 +66,15 @@ Convert source HTML into supported Portable Text paragraphs, H2/H3, lists, quote
 - Do not hotlink temporary exports, signed URLs, local `/tmp` files, or the wireframe prototype. Test every destination after source credentials are removed from the reader environment.
 - Review image alt text, captions, resolution, and mobile rendering. Crop/hotspot data is not currently applied by the renderer.
 
-## 4. Build and run a staged importer
+## 4. Run the staged importer
 
-No Confluence importer is implemented yet. Build one with a dry-run report, explicit allow/quarantine decisions, an idempotent source-ID mapping, validation failure handling, and rollback before any Sanity writes. The Admin is the named publication approver; imported content remains drafts until Admin review and explicit publish.
+Run `pnpm confluence:migrate dry-run` first. Review `data/confluence-helpdesk/dry-run-report.json`, especially excluded pages, suspected duplicate groups, missing alt text, unmatched attachments, unsupported macros, and tables that exceed Sanity's supported limits. The importer uses deterministic source-page IDs, so re-running the draft import replaces the same draft documents rather than creating duplicate documents.
 
-Use `helpcenterdevelopment` first. The dataset is currently public, so only approved public material may be imported; draft status is not permission to store confidential content. Keep `LMX Troubleshooting Guide (Internal)` out of the import pending explicit Admin clearance. Quarantine the `OLD COPY` page and candidate duplicate pairs in the review manifest; do not auto-delete or auto-publish based on title similarity.
+Set `SANITY_MIGRATION_TOKEN` in `.env.migration` to a Sanity token that can create documents and upload assets in `helpcenterdevelopment`. The importer refuses other project/dataset values, creates **drafts only**, and never publishes. Only run `pnpm confluence:migrate import --apply-drafts` after reviewing the dry-run report. No actual export, credentials, or Sanity writes are present in this repository yet.
 
-Validate imported data against actual schema constraints and the handwritten public contract; TypeScript result annotations do not validate external JSON. Import dependencies in order: products, collections, assets, then article drafts. Articles need same-language product and collection references. Do not configure the production dataset or publish articles until the Admin review gate is complete.
+The dataset is public, so only approved public material may be imported; draft status is not permission to store confidential content. The importer excludes `LMX Troubleshooting Guide (Internal)` and `LMX Content Black Screen/Logo Issue (OLD COPY)` from import pending Admin disposition. Possible duplicate pairs are imported as drafts and listed in the report for Admin review; do not publish them until resolved.
+
+The importer creates product drafts for the seven Confluence areas (including the new LMX GSL product), one product-scoped collection draft per area, and eligible article drafts with same-language product/collection references. It uploads attachment assets before creating documents. Review Admin-created product descriptions, auto-generated summaries/alt text, and warning callouts before publishing. Publish products and collections first, then approved articles. Never send `SANITY_MIGRATION_TOKEN` to the browser or include it in Netlify's public/client build environment.
 
 Reconcile document/asset counts, links, translation relationships, slug uniqueness, body member support, and rendered output. Schema validation and editorial review are both required; neither implies authorized publication by itself.
 

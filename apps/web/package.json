@@ -8,6 +8,7 @@
     "build": "react-router build",
     "start": "react-router-serve ./build/server/index.js",
     "sanity:verify": "node ./scripts/verify-sanity.mjs",
+    "confluence:migrate": "node ./scripts/migrate-confluence.mjs",
     "typecheck": "react-router typegen && tsc --noEmit"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
     "@react-router/node": "7.18.4",
     "@react-router/serve": "7.18.4",
     "@sanity/client": "8.8.0",
+    "cheerio": "^1.2.0",
     "dotenv": "17.2.3",
     "i18next": "26.4.2",
     "isbot": "^5",
