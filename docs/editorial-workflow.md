@@ -6,7 +6,7 @@
 
 Sanity Studio provides its native document editing, draft, and publish interface with the schemas in `apps/studio/schemas/`. A real cloud project, dataset, authorized account, and permissions must be configured separately. Repository configuration does not establish that any of those steps or live publishing tests have occurred.
 
-The public web client reads published content only; draft/version IDs are excluded by queries as well. No draft preview route, preview token exchange, signed webhook endpoint, or approval enforcement is configured. A draft in Studio is not a web preview. Scheduling availability depends on the Sanity plan and additional configuration; do not assume scheduled publishing is enabled.
+The public web client reads published content only; draft/version IDs are excluded by queries as well. No draft preview route, preview token exchange, or approval enforcement is configured. A separate Confluence sync service can create Sanity drafts from signed events, but it is not yet provisioned or connected to a live webhook. A draft in Studio is not a web preview. Scheduling availability depends on the Sanity plan and additional configuration; do not assume scheduled publishing is enabled.
 
 ## Recommended manual responsibilities
 
@@ -53,7 +53,7 @@ There is **no public report/dashboard or automatic editorial triage**. Any autho
 - Enforced author/reviewer/publisher permission boundaries and approval gates.
 - Authenticated draft preview and safe preview-token handling.
 - Plan-appropriate scheduling and release procedures.
-- Signed webhooks and reliable invalidation when caching or search indexing is introduced.
+- Reliable cache/search invalidation if caching or hosted search is introduced. The separate Confluence sync service uses signed events to create drafts; it does not publish or invalidate the current uncached reader queries.
 - Feedback reporting/triage tooling, migration automation, additional locales, and in-product help.
 
 Until these are implemented and tested, manual review is a process expectation—not a guarantee supplied by the software.

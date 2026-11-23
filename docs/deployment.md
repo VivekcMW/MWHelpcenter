@@ -90,9 +90,11 @@ The [helpfulness guide](helpfulness.md) details the success-only 30-day cookie, 
 
 ## Freshness and future scaling
 
-Content reads go to the Sanity origin on each request, without the content CDN or an application content cache. Root responses, robots, and sitemap use `no-store`. Unpublish freshness on a subsequent request therefore does not rely on a webhook; there is currently no webhook service. Sanity asset CDN image delivery is separate from content-query caching.
+Content reads go to the Sanity origin on each request, without the content CDN or an application content cache. Root responses, robots, and sitemap use `no-store`. Unpublish freshness on a subsequent request therefore does not rely on a webhook. Sanity asset CDN image delivery is separate from content-query caching.
 
-Do not add proxy/edge caching that overrides this behavior without a freshness design. For scale, plan bounded locale-aware caches, signed webhooks, publish/unpublish/delete invalidation, replay protection, retries, and reconciliation when webhook delivery fails. A hosted search index will need the same lifecycle and locale isolation. These systems are future work, not configured integrations.
+The separate [Confluence sync service](confluence-sync.md) has code for signed webhook ingestion and PostgreSQL-backed retries, but it is not deployed or configured. It creates drafts only and does not invalidate reader caches.
+
+Do not add proxy/edge caching that overrides this behavior without a freshness design. For scale, plan bounded locale-aware caches and publish/unpublish/delete invalidation. A hosted search index will need the same lifecycle and locale isolation. These systems are future work, not configured integrations.
 
 ## Pending launch gates
 
@@ -112,5 +114,6 @@ Do not add proxy/edge caching that overrides this behavior without a freshness d
 - [ ] Complete the authorized [migration and redirect plan](migration.md), durable asset checks, and rollback rehearsal before changing legacy traffic.
 - [ ] Assign manual editorial review/publishing ownership; do not describe approvals, draft preview, or scheduling as enforced/configured until separately verified.
 - [ ] Establish operational monitoring, recovery/backup ownership, and capacity expectations. Keep caching/indexing off until their invalidation and signed-webhook design is implemented and tested.
+- [ ] Provision and secure the Confluence sync PostgreSQL database and worker; configure signed Helpdesk page/attachment webhooks and periodic reconciliation; test draft-only updates, deletion review, retries, and rollback before enabling production events.
 
-Additional languages, production feedback operations/reporting, hosted search, draft preview, signed webhooks, migration automation, and in-product help remain outside the configured launch implementation. Local search/helpfulness implementation is not evidence of an actual Sanity connection, provisioning, publishing, or production readiness.
+Additional languages, production feedback operations/reporting, hosted search, draft preview, live Confluence sync operations, migration automation, and in-product help remain outside the configured launch implementation. Local search/helpfulness implementation is not evidence of an actual Sanity connection, provisioning, publishing, or production readiness.

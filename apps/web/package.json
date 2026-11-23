@@ -10,6 +10,10 @@
     "sanity:verify": "node ./scripts/verify-sanity.mjs",
     "sanity:seed-homepage": "node ./scripts/seed-homepage-content.mjs",
     "confluence:migrate": "node ./scripts/migrate-confluence.mjs",
+    "confluence:sync:db:migrate": "node ./scripts/confluence-sync-service.mjs db:migrate",
+    "confluence:sync:start": "node ./scripts/confluence-sync-service.mjs start",
+    "confluence:sync:status": "node ./scripts/confluence-sync-service.mjs status",
+    "confluence:sync:reconcile": "node ./scripts/confluence-sync-service.mjs reconcile",
     "typecheck": "react-router typegen && tsc --noEmit"
   },
   "dependencies": {
@@ -26,6 +30,7 @@
     "i18next": "26.4.2",
     "isbot": "^5",
     "lucide-react": "1.48.0",
+    "pg": "8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-i18next": "17.0.15",
@@ -37,6 +42,7 @@
     "@netlify/vite-plugin-react-router": "4.0.0",
     "@react-router/dev": "7.18.4",
     "@types/node": "^22.14.0",
+    "@types/pg": "8.23.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "typescript": "5.9.3",

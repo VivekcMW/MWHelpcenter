@@ -36,11 +36,11 @@ describe('Confluence migration transformation', () => {
   })
 
   it('uploads a referenced Confluence image as the supported imageWithCaption member', () => {
-    const source = '<ac:image ac:alt="Dashboard screenshot"><ri:attachment ri:filename="dashboard.png"/></ac:image>'
+    const source = '<img alt="Dashboard screenshot" src="/download/attachments/1/dashboard.png?version=2"/>'
     const result = parseConfluenceBody(source, {
       pageId: '200',
       pageTitle: 'Dashboard',
-      attachments: [{id: 'att-1', title: 'dashboard.png'}],
+      attachments: [{id: 'att-1', title: 'dashboard.png', mediaType: 'image/png'}],
       assetIds: new Map([['att-1', 'image-asset-id']]),
     })
 
@@ -51,6 +51,63 @@ describe('Confluence migration transformation', () => {
       alt: 'Dashboard screenshot',
       image: {asset: {_ref: 'image-asset-id'}},
     })
+  })
+
+  it('keeps an image reference downloadable when its attachment is not an image asset', () => {
+    const result = parseConfluenceBody('<img src="/download/attachments/2/unknown.png"/>', {
+      pageId: '201',
+      pageTitle: 'Unknown image type',
+      attachments: [{id: 'att-unknown', title: 'unknown.png', mediaType: 'application/octet-stream'}],
+      assetIds: new Map([['att-unknown', 'file-asset-id']]),
+    })
+
+    expect(result.body[0]).toMatchObject({
+      _type: 'downloadableFile',
+      file: {asset: {_ref: 'file-asset-id'}},
+    })
+    expect(result.warnings).toContain('Image attachment has an unsupported media type (unknown.png): Unknown image type (201)')
+  })
+
+  it('maps video, audio, and downloadable attachment links to supported media blocks', () => {
+    const source = `<ac:structured-macro ac:name="multimedia"><ac:parameter ac:name="name"><ri:attachment ri:filename="walkthrough.mp4"/></ac:parameter></ac:structured-macro>
+      <ac:link><ri:attachment ri:filename="voiceover.mp3"/><ac:plain-text-link-body><![CDATA[Audio instructions]]></ac:plain-text-link-body></ac:link>
+      <ac:link><ri:attachment ri:filename="setup.pdf"/><ac:plain-text-link-body><![CDATA[Setup guide]]></ac:plain-text-link-body></ac:link>`
+    const result = parseConfluenceBody(source, {
+      pageId: '205',
+      pageTitle: 'Media attachments',
+      attachments: [
+        {id: 'video-1', title: 'walkthrough.mp4', mediaType: 'video/mp4'},
+        {id: 'audio-1', title: 'voiceover.mp3', mediaType: 'audio/mpeg'},
+        {id: 'pdf-1', title: 'setup.pdf', mediaType: 'application/pdf'},
+      ],
+      assetIds: new Map([
+        ['video-1', 'video-asset'],
+        ['audio-1', 'audio-asset'],
+        ['pdf-1', 'pdf-asset'],
+      ]),
+    })
+
+    expect(result.body).toEqual([
+      {_key: 'v1', _type: 'videoWithCaption', video: {_type: 'file', asset: {_type: 'reference', _ref: 'video-asset'}}, title: 'walkthrough.mp4'},
+      {_key: 'a2', _type: 'audioWithTranscript', audio: {_type: 'file', asset: {_type: 'reference', _ref: 'audio-asset'}}, title: 'Audio instructions'},
+      {_key: 'f3', _type: 'downloadableFile', file: {_type: 'file', asset: {_type: 'reference', _ref: 'pdf-asset'}}, title: 'Setup guide'},
+    ])
+    expect(result.usedAttachmentIds).toEqual(['video-1', 'audio-1', 'pdf-1'])
+    expect(result.warnings).toEqual([
+      'Video needs captions or a transcript before publication: walkthrough.mp4 in Media attachments (205)',
+      'Audio needs a transcript before publication: voiceover.mp3 in Media attachments (205)',
+    ])
+  })
+
+  it('reports attachments that are exported but not referenced by article content', () => {
+    const result = parseConfluenceBody('<p>Text only</p>', {
+      pageId: '206',
+      pageTitle: 'Unreferenced media',
+      attachments: [{id: 'attachment-1', title: 'unused.pdf', mediaType: 'application/pdf'}],
+    })
+
+    expect(result.body[0].children[0].text).toBe('Text only')
+    expect(result.warnings).toContain('Unreferenced attachment requires review (unused.pdf): Unreferenced media (206)')
   })
 
   it('converts code and info macros while omitting the redundant legacy table of contents', () => {
@@ -109,6 +166,21 @@ ls -la]]></ac:plain-text-body></ac:structured-macro><ac:structured-macro ac:name
     expect(draftDocuments.find((document) => document._type === 'collection').product._weak).toBe(true)
     expect(draftDocuments.find((document) => document._type === 'article').primaryCollection._weak).toBe(true)
     expect(draftDocuments.find((document) => document._type === 'article').products[0]._weak).toBe(true)
+  })
+
+  it('maps nested Confluence pages to the nearest recognized product ancestor', () => {
+    const snapshot = {pages: [
+      {id: 'home', title: 'Help Center', ancestors: []},
+      {id: 'cms', title: 'CMS', ancestors: [{id: 'home', title: 'Help Center'}]},
+      {id: 'section', title: 'Setup guides', ancestors: [{id: 'home', title: 'Help Center'}, {id: 'cms', title: 'CMS'}]},
+      {id: 'nested-1', title: 'Install the player', ancestors: [{id: 'home', title: 'Help Center'}, {id: 'cms', title: 'CMS'}, {id: 'section', title: 'Setup guides'}]},
+    ]}
+
+    const classified = classifyPages(snapshot)
+    const plan = buildDocuments(snapshot)
+
+    expect(classified.articles.map(({id, product}) => ({id, product}))).toEqual([{id: 'section', product: 'CMS'}, {id: 'nested-1', product: 'CMS'}])
+    expect(plan.articles.map((article) => article.products[0]._ref)).toEqual(['confluence-product-cms', 'confluence-product-cms'])
   })
 
   it('creates stable ASCII slugs for titles with punctuation or non-Latin text', () => {

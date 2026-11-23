@@ -51,7 +51,7 @@ These are available commands, not a statement that checks or live deployment hav
 
 Implemented: English and Japanese product/collection/article routes and UI bundles, translation-aware language switching, structured article rendering, locale-specific title/summary/visible-body search with product filtering, bounded English typo matching and highlighted snippets, local SQLite article helpfulness, explicit published-only server queries, and isolated i18next instances. Article switching resolves a unique published counterpart by translation group rather than assuming equal slugs; product/collection switching checks shared stable slugs in the target catalog. Content reads use the origin on each request, with no Sanity content CDN or application content cache and `no-store` responses.
 
-Not configured: enforced editorial approvals, draft preview, signed webhooks, caching, production helpfulness storage/operations, a public feedback report or dashboard, hosted search, migration/import tooling, languages beyond English and Japanese, automatic translation, alternate-language `hreflang`, or in-product help. Studio has native draft/publish editing; scheduling depends on the Sanity plan and separate setup. Canonical URLs use the current pathname, and the sitemap already iterates registered locales.
+Not configured: enforced editorial approvals, draft preview, production caching, production helpfulness storage/operations, a public feedback report or dashboard, hosted search, languages beyond English and Japanese, automatic translation, alternate-language `hreflang`, or in-product help. The one-time migration tooling exists, and a separate draft-only Confluence sync service is implemented but not provisioned or connected to live webhooks yet. Studio has native draft/publish editing; scheduling depends on the Sanity plan and separate setup. Canonical URLs use the current pathname, and the sitemap already iterates registered locales.
 
 ## Guides
 
@@ -65,3 +65,4 @@ Not configured: enforced editorial approvals, draft preview, signed webhooks, ca
 - [Deployment, security, and launch gates](docs/deployment.md)
 - [Sanity integration and owner handoff](docs/sanity-integration.md)
 - [Migration plan](docs/migration.md)
+- [Confluence webhook synchronization](docs/confluence-sync.md)

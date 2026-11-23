@@ -92,6 +92,8 @@ function safeFilename(value) {
 }
 
 const ANIMATED_IMAGE_MIMES = new Set(['image/gif', 'image/webp', 'image/apng'])
+const VIDEO_MIMES = new Set(['video/mp4', 'video/webm', 'video/ogg'])
+const AUDIO_MIMES = new Set(['audio/mpeg', 'audio/mp4', 'audio/ogg', 'audio/wav', 'audio/webm', 'audio/aac'])
 
 async function exportSpace() {
   await mkdir(assetsDir, {recursive: true})
@@ -203,6 +205,7 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
   const warnings = []
   const body = []
   const attachmentByName = new Map(attachments.map((attachment) => [attachment.title.toLowerCase(), attachment]))
+  const usedAttachmentIds = new Set()
 
   function addInline(nodes, marks = [], spans = [], markDefs = []) {
     for (const node of nodes || []) {
@@ -216,7 +219,9 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
       }
       if (node.type !== 'tag') continue
       const tag = localName(node)
-      if (tag === 'image' || tag === 'structured-macro') continue
+      if (['image', 'img', 'video', 'audio', 'source', 'structured-macro'].includes(tag)) continue
+      if (tag === 'link' && attachmentFilename(node)) continue
+      if (tag === 'a' && isAttachmentDownload(node)) continue
       let nextMarks = marks
       if (['strong', 'b'].includes(tag)) nextMarks = [...marks, 'strong']
       else if (['em', 'i'].includes(tag)) nextMarks = [...marks, 'em']
@@ -272,13 +277,116 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
     return filename
   }
 
+  function isAttachmentDownload(node) {
+    return /\/download\/attachments\/\d+\//i.test(attribute(node, 'href') || '')
+  }
+
+  function sourceFilename(node) {
+    let filename
+    const visit = (current) => {
+      if (filename || !current) return
+      if (current.type === 'tag') {
+        const source = attribute(current, 'src') || attribute(current, 'href')
+        if (source) {
+          const lastSegment = source.split(/[?#]/, 1)[0].split('/').at(-1)
+          if (lastSegment) {
+            try {
+              filename = decodeURIComponent(lastSegment)
+            } catch {
+              filename = lastSegment
+            }
+          }
+        }
+      }
+      for (const child of current.children || []) visit(child)
+    }
+    visit(node)
+    return filename
+  }
+
+  function findAttachment(node, mediaLabel) {
+    const filename = attachmentFilename(node) || sourceFilename(node)
+    if (!filename) {
+      warnings.push(`${mediaLabel} without an attachment reference: ${pageTitle} (${pageId})`)
+      return null
+    }
+    const attachment = attachmentByName.get(filename.toLowerCase())
+    if (!attachment) {
+      warnings.push(`Attachment not exported (${filename}): ${pageTitle} (${pageId})`)
+      return null
+    }
+    const assetId = assetIds.get(attachment.id)
+    if (!assetId) {
+      warnings.push(`Attachment awaits asset upload (${filename}): ${pageTitle} (${pageId})`)
+      return null
+    }
+    usedAttachmentIds.add(attachment.id)
+    return {attachment, assetId, filename}
+  }
+
+  function attachmentLabel(node, filename) {
+    const linkBody = findDescendant(node, 'plain-text-link-body') || findDescendant(node, 'link-body')
+    return plainText(linkBody ? $.html(linkBody) : '').trim() || filename
+  }
+
+  function addAttachment(node, mediaLabel = 'Attachment') {
+    const match = findAttachment(node, mediaLabel)
+    if (!match) return false
+    const {attachment, assetId, filename} = match
+    const mimeType = attachment.mediaType?.toLowerCase().split(';')[0].trim() || ''
+    const title = attachmentLabel(node, filename).slice(0, 120)
+    if (VIDEO_MIMES.has(mimeType)) {
+      body.push({
+        _key: key('v'),
+        _type: 'videoWithCaption',
+        video: {_type: 'file', asset: {_type: 'reference', _ref: assetId}},
+        title,
+      })
+      warnings.push(`Video needs captions or a transcript before publication: ${filename} in ${pageTitle} (${pageId})`)
+      return true
+    }
+    if (AUDIO_MIMES.has(mimeType)) {
+      body.push({
+        _key: key('a'),
+        _type: 'audioWithTranscript',
+        audio: {_type: 'file', asset: {_type: 'reference', _ref: assetId}},
+        title,
+      })
+      warnings.push(`Audio needs a transcript before publication: ${filename} in ${pageTitle} (${pageId})`)
+      return true
+    }
+    if (mimeType.startsWith('image/')) {
+      warnings.push(`Image attachment is not represented by an inline Confluence image: ${filename} in ${pageTitle} (${pageId})`)
+      body.push({
+        _key: key('f'),
+        _type: 'downloadableFile',
+        file: {_type: 'file', asset: {_type: 'reference', _ref: assetId}},
+        title,
+      })
+      return true
+    }
+    body.push({
+      _key: key('f'),
+      _type: 'downloadableFile',
+      file: {_type: 'file', asset: {_type: 'reference', _ref: assetId}},
+      title,
+    })
+    return true
+  }
+
   function addImage(node) {
-    const filename = attachmentFilename(node) || attribute(node, 'src')?.split('/').pop()
+    const filename = attachmentFilename(node) || sourceFilename(node)
     if (!filename) {
       warnings.push(`Image without a source: ${pageTitle} (${pageId})`)
       return
     }
-    const attachment = attachmentByName.get(decodeURIComponent(filename).toLowerCase())
+    let decodedFilename
+    try {
+      decodedFilename = decodeURIComponent(filename)
+    } catch {
+      decodedFilename = filename
+    }
+    const attachment = attachmentByName.get(decodedFilename.toLowerCase())
     if (!attachment) {
       warnings.push(`Image attachment not exported (${filename}): ${pageTitle} (${pageId})`)
       addCallout('Image requires review', `Image attachment "${filename}" could not be matched to the Confluence export.`)
@@ -289,10 +397,22 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
       warnings.push(`Image awaits asset upload (${filename}): ${pageTitle} (${pageId})`)
       return
     }
+    usedAttachmentIds.add(attachment.id)
     const alt = attribute(node, 'alt') || attribute(node, 'title') || ''
     if (!alt) warnings.push(`Image needs human-written alt text (${filename}): ${pageTitle} (${pageId})`)
     const caption = plainText($(node).find('caption').first().html() || '').slice(0, 320)
-    if (ANIMATED_IMAGE_MIMES.has(attachment.mediaType?.toLowerCase())) {
+    const mimeType = attachment.mediaType?.toLowerCase().split(';')[0].trim() || ''
+    if (!mimeType.startsWith('image/')) {
+      warnings.push(`Image attachment has an unsupported media type (${filename}): ${pageTitle} (${pageId})`)
+      body.push({
+        _key: key('f'),
+        _type: 'downloadableFile',
+        file: {_type: 'file', asset: {_type: 'reference', _ref: assetId}},
+        title: filename.slice(0, 120),
+      })
+      return
+    }
+    if (ANIMATED_IMAGE_MIMES.has(mimeType)) {
       body.push({
         _key: key('i'),
         _type: 'animatedImageWithCaption',
@@ -360,18 +480,27 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
       else if (tag === 'p') {
         addTextBlock(node.children)
         const images = []
+        const media = []
+        const files = []
         const findImages = (current) => {
           for (const child of current || []) {
             if (child.type === 'tag' && ['image', 'img'].includes(localName(child))) images.push(child)
+            else if (child.type === 'tag' && ['video', 'audio'].includes(localName(child))) media.push(child)
+            else if (child.type === 'tag' && ((localName(child) === 'link' && attachmentFilename(child)) || (localName(child) === 'a' && isAttachmentDownload(child)))) files.push(child)
             else findImages(child.children)
           }
         }
         findImages(node.children)
         images.forEach(addImage)
+        media.forEach((element) => addAttachment(element, `${localName(element)} media`))
+        files.forEach((element) => addAttachment(element))
       } else if (['ul', 'ol'].includes(tag)) addList(node, tag === 'ol' ? 'number' : 'bullet')
       else if (tag === 'blockquote') addTextBlock(node.children, 'blockquote')
       else if (tag === 'table') addTable(node)
       else if (['image', 'img'].includes(tag)) addImage(node)
+      else if (tag === 'video' || tag === 'audio') addAttachment(node, `${tag} media`)
+      else if (tag === 'link' && attachmentFilename(node)) addAttachment(node)
+      else if (tag === 'a' && isAttachmentDownload(node)) addAttachment(node)
       else if (tag === 'structured-macro') {
         const macro = attribute(node, 'name') || 'unknown'
         if (macro === 'code') {
@@ -388,6 +517,10 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
           addCallout(decodeHtmlEntities(rawText(titleParameter)).trim() || 'Information', text, 'info')
           continue
         }
+        if (['multimedia', 'view-file', 'viewdoc'].includes(macro) && attachmentFilename(node)) {
+          addAttachment(node, `${macro} macro`)
+          continue
+        }
         warnings.push(`Unsupported Confluence macro "${macro}": ${pageTitle} (${pageId})`)
         addCallout(`Confluence macro requires review: ${macro}`, plainText($.html(node)))
       } else if (['div', 'section', 'article', 'ac', 'span'].includes(tag) || node.children?.length) walk(node.children)
@@ -395,11 +528,16 @@ function parseConfluenceBody(html, {pageId, pageTitle, attachments = [], assetId
   }
 
   walk(root.contents().toArray())
+  for (const attachment of attachments) {
+    if (!usedAttachmentIds.has(attachment.id)) {
+      warnings.push(`Unreferenced attachment requires review (${attachment.title}): ${pageTitle} (${pageId})`)
+    }
+  }
   if (!body.length) {
     const text = plainText(html)
     if (text) body.push({_key: key('b'), _type: 'block', style: 'normal', children: [{_key: key('s'), _type: 'span', text, marks: []}], markDefs: []})
   }
-  return {body, warnings}
+  return {body, warnings, usedAttachmentIds: [...usedAttachmentIds]}
 }
 
 function classifyPages(snapshot) {
@@ -413,7 +551,7 @@ function classifyPages(snapshot) {
 
   for (const page of snapshot.pages) {
     if (page.title === 'Help Center' || (PRODUCT_TITLES.has(page.title) && page.ancestors?.at(-1)?.title === 'Help Center')) continue
-    const product = page.ancestors?.at(-1)?.title
+    const product = [...(page.ancestors || [])].reverse().find((ancestor) => PRODUCT_TITLES.has(ancestor.title))?.title
     if (!rootPages.has(product)) {
       unsupported.push({id: page.id, title: page.title, reason: `No recognized product ancestor: ${product || '(none)'}`})
       continue
@@ -693,7 +831,7 @@ async function publishAll(snapshot) {
   const expectedProductIds = classification.products.map((product) => PRODUCT_IDS.get(product.title))
   const expectedCollectionIds = classification.products.map((product) => COLLECTION_IDS.get(product.title))
   const expectedIds = [...expectedProductIds, ...expectedCollectionIds, ...expectedArticleIds]
-  const existingDocuments = await client.fetch('*[_id in $ids || _id in $draftIds]{_id,_type,body[]{_type,image{asset{_ref}}}}', {
+  const existingDocuments = await client.fetch('*[_id in $ids || _id in $draftIds]{_id,_type,body[]{_type,image{asset{_ref}},file{asset{_ref}},video{asset{_ref}},audio{asset{_ref}},captions[]{file{asset{_ref}}}}}', {
     ids: expectedIds,
     draftIds: expectedIds.map((id) => `drafts.${id}`),
   })
@@ -703,12 +841,30 @@ async function publishAll(snapshot) {
   const conflictingDocuments = expectedIds.filter((id) => existingIds.has(id) && existingIds.has(`drafts.${id}`))
   if (conflictingDocuments.length) throw new Error(`Refusing to publish: ${conflictingDocuments.length} document(s) have both a published record and a draft.`)
 
-  const imageIds = [...new Set(existingDocuments.flatMap((document) => document.body || [])
-    .filter((block) => block._type === 'imageWithCaption')
-    .map((block) => block.image?.asset?._ref)
-    .filter(Boolean))]
-  const foundImages = imageIds.length ? await client.fetch('*[_id in $ids && _type == "sanity.imageAsset"]._id', {ids: imageIds}) : []
-  if (foundImages.length !== imageIds.length) throw new Error(`Refusing to publish: only ${foundImages.length}/${imageIds.length} referenced image assets resolve.`)
+  const mediaReferences = existingDocuments.flatMap((document) => document.body || []).flatMap((block) => {
+    const references = [
+      block.image?.asset?._ref,
+      block.file?.asset?._ref,
+      block.video?.asset?._ref,
+      block.audio?.asset?._ref,
+      ...(block.captions || []).map((caption) => caption.file?.asset?._ref),
+    ].filter(Boolean)
+    if (block._type === 'videoWithCaption' && !block.transcript?.trim() && !block.captions?.length) {
+      throw new Error(`Refusing to publish: video block ${block._key} needs captions or a transcript.`)
+    }
+    if (block._type === 'audioWithTranscript' && !block.transcript?.trim()) {
+      throw new Error(`Refusing to publish: audio block ${block._key} needs a transcript.`)
+    }
+    return references.map((id) => ({id, type: block._type === 'imageWithCaption' ? 'sanity.imageAsset' : 'sanity.fileAsset'}))
+  })
+  const referencedAssets = new Map(mediaReferences.map(({id, type}) => [id, type]))
+  for (const [assetType, ids] of ['sanity.imageAsset', 'sanity.fileAsset'].map((type) => [
+    type,
+    [...referencedAssets].filter(([, referencedType]) => referencedType === type).map(([id]) => id),
+  ])) {
+    const found = ids.length ? await client.fetch('*[_id in $ids && _type == $type]._id', {ids, type: assetType}) : []
+    if (found.length !== ids.length) throw new Error(`Refusing to publish: only ${found.length}/${ids.length} referenced ${assetType} assets resolve.`)
+  }
 
   const report = {startedAt: new Date().toISOString(), dataset, adminConfirmed: true, published: {products: 0, collections: 0, articles: 0}, skippedAlreadyPublished: 0, completed: false}
   const reportPath = join(exportDir, 'publish-report.json')
@@ -781,4 +937,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   })
 }
 
-export {buildDocuments, buildDraftDocuments, classifyPages, parseConfluenceBody, preparePublishedDocument, slugify}
+export {PRODUCTS, buildDocuments, buildDraftDocuments, classifyPages, parseConfluenceBody, preparePublishedDocument, slugify}
