@@ -20,6 +20,8 @@
   "troubleshooting": "トラブルシューティングを見る",
   "troubleshootingQuery": "確認",
   "allGuides": "すべてのガイド",
+  "productStartTitle": "基本から始める",
+  "productStartDescription": "使い始めるためのガイドや製品の概要をご覧ください。",
   "topics": "トピック",
   "articleCount_one": "{{count}} 件のガイド",
   "articleCount_other": "{{count}} 件のガイド",

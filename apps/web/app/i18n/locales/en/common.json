@@ -21,6 +21,8 @@
   "troubleshooting": "Browse troubleshooting",
   "troubleshootingQuery": "checks",
   "allGuides": "All guides",
+  "productStartTitle": "Start with the basics",
+  "productStartDescription": "Explore getting started guides and product overviews.",
   "topics": "Topics",
   "articleCount_one": "{{count}} guide",
   "articleCount_other": "{{count}} guides",

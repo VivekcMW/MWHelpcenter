@@ -136,6 +136,12 @@ filter clearing (preserving query/locale), getting started and support. See
 
 ### Feedback and sharing
 
+The floating help chat uses a non-modal, keyboard-accessible panel. It searches
+published guides in the current locale and returns article links rather than
+AI-generated answers. Messages remain in browser memory until reload or language
+change; the application does not persist them. The interface asks visitors not
+to enter sensitive information and offers support when no guide matches.
+
 `spinner.tsx` provides the shared decorative ring: `sm` is 18px (the default),
 `md` 24px and `lg` 32px. `loading-feedback.tsx` provides `NavigationFeedback`
 and the three-row `ResultsSkeleton`. Callers own localized busy announcements;

@@ -6,6 +6,7 @@ import type { loader } from '../../root'
 import { localePath, defaultLocale } from '../../i18n/config'
 import { SiteHeader } from './site-header'
 import { NavigationFeedback } from '../ui/loading-feedback'
+import { HelpChat } from '../ui/help-chat'
 
 export function SiteShell({ children }: { readonly children: ReactNode }) {
   const { t } = useTranslation()
@@ -30,5 +31,6 @@ export function SiteShell({ children }: { readonly children: ReactNode }) {
       <div className="route-content" key={pathname}>{children}</div>
     </main>
     <footer className="site-footer"><div><img className="brand-logo" src="/mw-logo.svg" width={100} height={47} alt="Moving Walls" /><span>{settings?.footerText || t('footer')}</span></div><span>{settings?.footerNote || t('footerNote')}</span><Link to={localePath(locale, 'support')}>{settings?.supportLinkLabel || nav('support')} <ArrowUpRight size={16} aria-hidden="true" /></Link></footer>
+    <HelpChat key={locale} locale={locale} />
   </>
 }

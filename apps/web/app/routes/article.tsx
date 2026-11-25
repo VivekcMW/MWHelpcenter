@@ -10,6 +10,7 @@ import { ShareGuide } from '../components/ui/share-guide'
 import { ArticleHelpfulness } from '../components/ui/article-helpfulness'
 import { getHelpfulnessState, submitHelpfulness } from '../lib/helpfulness.server'
 import type { HelpfulnessResult } from '../features/helpfulness'
+import { relatedGuides } from '../features/discovery'
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const locale = requireLocale(params.locale)
@@ -25,7 +26,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     locale, article,
     helpfulness: { enabled, demo, vote, reason },
     collection: catalog.collections.find((item) => item.slug === article.collectionSlug),
-    related: catalog.articles.filter((item) => item._id !== article._id && item.productSlugs.some((slug) => article.productSlugs.includes(slug))).slice(0, 3),
+    related: relatedGuides(article, catalog.articles),
   }
 }
 

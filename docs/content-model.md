@@ -24,6 +24,8 @@ All seven document types include `language`; Studio and the web app support Engl
 
 Article `contentType` choices are `guide`, `faq`, `troubleshooting`, `overview`, and `best-practice`. These classify articles; they do not select separate rendering engines.
 
+Product pages show up to three starting guides drawn from articles in the `getting-started` collection or classified as `overview`, followed by the full product guide list. Related guides share a product and locale with the current article; articles sharing its primary or additional collections appear first. Both use published catalog metadata, not popularity or editorial recommendations.
+
 ### Validation and public fields
 
 - Titles are required, 2–120 characters; descriptions are required, up to 320 characters. Article summaries are required, 10–320 characters.
