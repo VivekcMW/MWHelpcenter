@@ -25,6 +25,7 @@ describe('safe content URLs', () => {
 
 describe('server configuration', () => {
   it('has an explicit demo default', () => { expect(parseEnv({}).CONTENT_MODE).toBe('demo') })
+  it('keeps HelpChat disabled until explicitly enabled', () => { expect(parseEnv({}).HELP_CHAT_ENABLED).toBe('false') })
   it('requires a real project ID in Sanity mode', () => {
     expect(() => parseEnv({ CONTENT_MODE: 'sanity' })).toThrow('SANITY_PROJECT_ID')
   })

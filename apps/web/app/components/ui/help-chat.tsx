@@ -7,7 +7,7 @@ import { localePath, type Locale } from '../../i18n/config'
 import { MAX_QUERY_LENGTH } from '../../features/search/text'
 import type { ChatMessage, ChatResponse, ChatSearchResult } from '../../routes/resources/chat'
 
-type Exchange = { query: string; answer: string | null; sources: ChatSearchResult[] }
+type Exchange = { query: string; answer: string | null; sources: ChatSearchResult[]; rateLimited?: boolean }
 
 export function HelpChat({locale}: Readonly<{locale: Locale}>) {
   const {t} = useTranslation('feedback')
@@ -46,8 +46,12 @@ export function HelpChat({locale}: Readonly<{locale: Locale}>) {
         body: JSON.stringify({messages}),
         signal: controller.signal,
       })
-      if (!response.ok) throw new Error('Help chat unavailable')
       const result: ChatResponse = await response.json()
+      if (response.status === 429 && !result.ok && result.error === 'rate_limited') {
+        setExchanges((previous) => [...previous, {query: text, answer: null, sources: [], rateLimited: true}].slice(-10))
+        return
+      }
+      if (!response.ok) throw new Error('Help chat unavailable')
       if (!result.ok) throw new Error('Help chat unavailable')
       setExchanges((previous) => [...previous, {query: text, answer: result.answer, sources: result.sources}].slice(-10))
     } catch {
@@ -70,7 +74,7 @@ export function HelpChat({locale}: Readonly<{locale: Locale}>) {
         {exchanges.map((exchange, index) => <div className="help-chat-exchange" key={index}>
           <p className="help-chat-question">{exchange.query}</p>
           <div className="help-chat-answer">
-            {exchange.answer === null ? <p role="alert">{t('chatError')}</p> : <>
+            {exchange.answer === null ? <p role="alert">{t(exchange.rateLimited ? 'chatRateLimited' : 'chatError')}</p> : <>
               <p>{exchange.answer}</p>
               {exchange.sources.length > 0 ? <>
                 <p>{t('chatSources')}</p>

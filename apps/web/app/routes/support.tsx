@@ -16,9 +16,13 @@ export default function SupportPage() {
   const { t } = useTranslation()
   const { t: feedback } = useTranslation('feedback')
   const location = useLocation()
-  const incomingDraft = typeof location.state?.chatDraft === 'string' ? location.state.chatDraft.slice(0, 2000) : ''
-  const [draft, setDraft] = useState(incomingDraft)
-  useEffect(() => { setDraft(incomingDraft) }, [incomingDraft, location.key])
+  const [incomingDraft, setIncomingDraft] = useState('')
+  const [draft, setDraft] = useState('')
+  useEffect(() => {
+    const next = typeof location.state?.chatDraft === 'string' ? location.state.chatDraft.slice(0, 2000) : ''
+    setIncomingDraft(next)
+    setDraft(next)
+  }, [location.state, location.key])
   const emailHref = `mailto:${supportEmail}${incomingDraft ? `?subject=${encodeURIComponent(feedback('chatEmailSubject'))}&body=${encodeURIComponent(draft)}` : ''}`
   return <div className="page-container inner-page narrow">
     <div className="page-heading"><p className="eyebrow">{t('contactSupport')}</p><h1>{t('supportTitle')}</h1><p>{t('supportDescription')}</p></div>

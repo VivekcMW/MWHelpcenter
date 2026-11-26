@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 
-import React from 'react'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import React, { act } from 'react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { renderToString } from 'react-dom/server'
+import { hydrateRoot } from 'react-dom/client'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { I18nextProvider } from 'react-i18next'
@@ -78,5 +80,36 @@ describe.each(['en', 'ja'] as const)('help chat (%s)', (locale) => {
     const email = screen.getByRole('link', {name: common('supportEmail')})
     expect(email.getAttribute('href')).toContain('body=Reviewed%20support%20request')
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('explains when the shared chat quota is exhausted', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ok: false, error: 'rate_limited'}), {status: 429}))
+    const t = createI18n(locale).getFixedT(locale, 'feedback')
+    const user = userEvent.setup()
+    render(<I18nextProvider i18n={createI18n(locale)}><MemoryRouter><HelpChat locale={locale} /></MemoryRouter></I18nextProvider>)
+    await user.click(screen.getByRole('button', {name: t('chatOpen')}))
+    await user.type(screen.getByRole('textbox', {name: t('chatInput')}), 'inventory')
+    await user.click(screen.getByRole('button', {name: t('chatSend')}))
+    expect((await screen.findByRole('alert')).textContent).toBe(t('chatRateLimited'))
+  })
+
+  it('hydrates a support page with navigation state without a mismatch', async () => {
+    const t = createI18n(locale).getFixedT(locale, 'feedback')
+    const routes = [{path: `/${locale}/support`, element: <SupportPage />, loader: () => ({locale, supportEmail: 'support@example.com'})}]
+    const entry = {pathname: `/${locale}/support`, state: {chatDraft: 'Inventory question'}}
+    const serverRouter = createMemoryRouter(routes, {initialEntries: [`/${locale}/support`], hydrationData: {loaderData: {'0': {locale, supportEmail: 'support@example.com'}}}})
+    const clientRouter = createMemoryRouter(routes, {initialEntries: [entry], hydrationData: {loaderData: {'0': {locale, supportEmail: 'support@example.com'}}}})
+    const container = document.createElement('div')
+    container.innerHTML = renderToString(<I18nextProvider i18n={createI18n(locale)}><RouterProvider router={serverRouter} /></I18nextProvider>)
+    document.body.appendChild(container)
+    const onRecoverableError = vi.fn()
+    let root: ReturnType<typeof hydrateRoot>
+    await act(async () => {
+      root = hydrateRoot(container, <I18nextProvider i18n={createI18n(locale)}><RouterProvider router={clientRouter} /></I18nextProvider>, {onRecoverableError})
+    })
+    await waitFor(() => expect((within(container).getByRole('textbox', {name: t('chatDraftLabel')}) as HTMLTextAreaElement).value).toBe('Inventory question'))
+    expect(onRecoverableError).not.toHaveBeenCalled()
+    await act(async () => { root.unmount() })
+    container.remove()
   })
 })

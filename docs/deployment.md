@@ -34,6 +34,8 @@ Copy the app-specific example files to their corresponding `.env` paths for loca
 
 Studio's CLI reads existing shell values first, then its app `.env`, then the root `.env` as a compatibility fallback, copying only nonempty public Studio identifiers. Prefer the app-specific file; this fallback is not a reason to put web tokens in shared or browser-facing configuration.
 
+For Netlify, set runtime variables in the Netlify UI, CLI, or API with a scope that includes **Functions**; values in `netlify.toml` are not available to Functions at runtime. Environment changes require a new deployment. See [Netlify's function environment documentation](https://docs.netlify.com/build/functions/environment-variables/).
+
 ### Web: `apps/web/.env`
 
 | Variable | Default/example | Purpose and restrictions |
@@ -45,8 +47,11 @@ Studio's CLI reads existing shell values first, then its app `.env`, then the ro
 | `SANITY_API_VERSION` | `2025-02-19` | Pinned API date (`YYYY-MM-DD`), not a token or dataset version |
 | `SANITY_READ_TOKEN` | Empty | Optional server-only least-privilege read token when dataset access requires it; no write/preview credential in client code |
 | `ANTHROPIC_API_KEY` | Empty | Optional server-only key for HelpChat AI answers. The chat sends user questions and selected published article excerpts to Anthropic; never expose or commit this key. |
-| `HELP_CHAT_ENABLED` | `true` | Set to `false` to disable the AI endpoint without removing the key. A disabled or unconfigured chat returns an unavailable message. |
+| `HELP_CHAT_ENABLED` | `false` | Set to `true` only after configuring the key, shared quota, and abuse controls. A disabled or unconfigured chat returns an unavailable message. |
 | `HELP_CHAT_METRICS` | `false` | When enabled, log per-request outcome, locale, duration, provider/tool-call counts, token usage and citation count; never chat text or source content. Follow the host's log retention policy. |
+| `HELP_CHAT_DATABASE_URL` | Empty | Server-only PostgreSQL connection URL for the shared HelpChat quota. A missing, inaccessible, or unprovisioned database makes chat unavailable. TLS `sslmode=verify-full` is required except for localhost in development or tests. |
+| `HELP_CHAT_REQUESTS_PER_MINUTE` | `1000` | Global fixed UTC-minute request quota shared across instances. |
+| `HELP_CHAT_REQUESTS_PER_DAY` | `10000` | Global fixed UTC-day request quota shared across instances. |
 | `SUPPORT_EMAIL` | Empty | Optional approved public support email; blank displays a pending-configuration message |
 | `FEEDBACK_DB_PATH` | Unset | Sanity helpfulness disabled unless explicitly set; demo falls back to `data/helpfulness-demo.sqlite` relative to cwd. Use an absolute file path inside a dedicated PRIVATE local persistent directory for production. Never public/shared/network/serverless ephemeral storage. |
 
@@ -86,14 +91,23 @@ The [helpfulness guide](helpfulness.md) details the success-only 30-day cookie, 
 
 - Sanity content fetching is server-only. The client uses `perspective: 'published'`, `useCdn: false`, a 10-second timeout, and one retry. Public GROQ queries also exclude draft/version IDs and whitelist fields at every nested level.
 - A read token must stay in the server environment, never loader data, browser bundles, URLs, or logs. Published reader content is public even if the underlying dataset requires a server token.
-- HelpChat uses Anthropic's Messages API only on the server and searches the published locale catalog before answering. It provides bounded relevant excerpts, validates source IDs returned by the model, and links only cited guides. Citation validation does not guarantee that a claim is supported; review answers against source content.
+- HelpChat uses Anthropic's Messages API only on the server and searches the published locale catalog before answering. Answers contain only verbatim passages verified against the retrieved excerpts, with links to their guides; a localized clarification is used when the model finds insufficient evidence. Verbatim matching prevents invented wording but cannot guarantee relevance or that a passage is not misleading out of context. Review real answers against complete source content.
 - Chat history is held in the browser while the component is mounted; up to two previous exchanges are sent with the next question. The support link places the last three questions in an editable draft in browser navigation state, not the page URL. Opening an email app requires a separate user action and does not send an email automatically.
-- Requests are bounded but there is no shared chat rate limiter or application spending cap. Configure platform-level rate limiting/abuse protection, provider budget alerts, and usage monitoring before enabling this endpoint for unrestricted public production traffic. Until then, limit access to a controlled pilot or set `HELP_CHAT_ENABLED=false`.
+- HelpChat reserves one request in the PostgreSQL quota before reading the catalog or calling the model. Its global fixed-window limits apply across instances and failed requests consume quota; they are not per-visitor limits, a rolling-window limit, or a monetary spending cap. A single visitor can exhaust the shared quota. Configure platform-level per-client rate limiting/abuse protection, provider budget alerts and usage monitoring before unrestricted production traffic. Keep `HELP_CHAT_ENABLED=false` until these controls are verified.
 - Optional chat metrics cover server responses after validation, not every incoming/rejected request. Token counts are provider-reported input/output values, not billing totals; use provider-side usage and billing for cost monitoring. There is no resolution-rate tracking or satisfaction collection for chat.
 - Explicit projections limit what the web serializes; they do not change dataset permissions or prevent direct API access permitted by the actual Sanity access model. Configure dataset visibility and memberships deliberately.
 - Studio validators are editorial guardrails, not authorization. Review the real provider roles and prevent confidential records from being placed in public content fields.
 - React renders text without raw HTML injection. Link protocols and image hosts are checked in the renderer; unsupported images are omitted. Review imported URLs and assets rather than relying solely on authoring validation.
 - The root response sets `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin`. Verify headers through the final host/proxy. CSP, HSTS, upstream request rate protection, monitoring, and other hosting controls require separate review; helpfulness's accepted-write limiter does not replace them.
+
+### HelpChat production setup
+
+1. Keep `HELP_CHAT_ENABLED=false` while configuring and testing. Provision a PostgreSQL database accessible from all production Functions instances, with TLS certificate and hostname verification. Run [`help-chat-quota.sql`](../apps/web/scripts/help-chat-quota.sql) once using an administrator connection. The script creates and seeds one aggregate counter row without storing questions, IP addresses, or other visitor data. Do not delete or reset it during operation: doing so weakens the quota.
+2. Grant the runtime database role only the required schema access and `SELECT` and `UPDATE` on `help_chat_quota`. Use one shared database and schema for all production instances. Set `HELP_CHAT_DATABASE_URL` as a secret in Netlify's Functions environment, using a PostgreSQL URL with `sslmode=verify-full` and a trusted certificate. Never put credentials in the repository or browser code.
+3. Configure `ANTHROPIC_API_KEY`, `SUPPORT_EMAIL`, `HELP_CHAT_REQUESTS_PER_MINUTE`, and `HELP_CHAT_REQUESTS_PER_DAY` in Netlify's production Functions environment. The configured initial global limits are 1,000 per UTC minute and 10,000 per UTC day; assess their cost and capacity before rollout. Each accepted request can make up to three provider calls, and this quota does not cap dollars or tokens.
+4. Configure provider-side spending controls or alerts, per-client edge abuse controls, and monitoring. Deploy with chat disabled; verify the support email and database connectivity without exposing credentials. Then set `HELP_CHAT_ENABLED=true` and redeploy. Verify real synthetic questions, citations, quota rejection, support handoff, and function logs on the deployed version. Verify rollback and disable procedures.
+
+The quota fails closed if the database or its seeded row is unavailable. Counters reset on UTC fixed-window boundaries, so bursts can span a boundary. The limiter does not shield the database or server from request floods; use upstream protection. Use a connection-pooling service if the database cannot handle connections from many serverless instances. Local integration tests can be run against a dedicated local database named `helpchat_quota_test` after applying the SQL, by setting `HELP_CHAT_TEST_DATABASE_URL` and running `pnpm exec vitest run apps/web/tests/help-chat-quota.integration.test.ts`; never point it at a shared database.
 
 ## Freshness and future scaling
 

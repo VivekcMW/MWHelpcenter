@@ -11,8 +11,11 @@ const schema = z.object({
   SANITY_API_VERSION: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).default('2025-02-19'),
   SANITY_READ_TOKEN: z.string().default(''),
   ANTHROPIC_API_KEY: z.string().default(''),
-  HELP_CHAT_ENABLED: z.enum(['true', 'false']).default('true'),
+  HELP_CHAT_ENABLED: z.enum(['true', 'false']).default('false'),
   HELP_CHAT_METRICS: z.enum(['true', 'false']).default('false'),
+  HELP_CHAT_DATABASE_URL: z.string().default(''),
+  HELP_CHAT_REQUESTS_PER_MINUTE: z.coerce.number().int().min(1).max(100000).default(1000),
+  HELP_CHAT_REQUESTS_PER_DAY: z.coerce.number().int().min(1).max(1000000).default(10000),
   SUPPORT_EMAIL: z.union([z.email(), z.literal('')]).default(''),
 }).superRefine((env, ctx) => {
   if (env.CONTENT_MODE === 'sanity' && !/^[a-z0-9]+$/.test(env.SANITY_PROJECT_ID)) {
