@@ -109,6 +109,8 @@ The [helpfulness guide](helpfulness.md) details the success-only 30-day cookie, 
 
 The quota fails closed if the database or its seeded row is unavailable. Counters reset on UTC fixed-window boundaries, so bursts can span a boundary. The limiter does not shield the database or server from request floods; use upstream protection. Use a connection-pooling service if the database cannot handle connections from many serverless instances. Local integration tests can be run against a dedicated local database named `helpchat_quota_test` after applying the SQL, by setting `HELP_CHAT_TEST_DATABASE_URL` and running `pnpm exec vitest run apps/web/tests/help-chat-quota.integration.test.ts`; never point it at a shared database.
 
+Quota failures log the configuration, connection, or query phase and a safe, allowlisted reason when available. They do not log the database URL, credentials, or raw database error messages.
+
 ## Freshness and future scaling
 
 Content reads go to the Sanity origin on each request, without the content CDN or an application content cache. Root responses, robots, and sitemap use `no-store`. Unpublish freshness on a subsequent request therefore does not rely on a webhook. Sanity asset CDN image delivery is separate from content-query caching.
