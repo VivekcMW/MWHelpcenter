@@ -18,16 +18,18 @@ export async function reserveHelpChatRequest(databaseUrl: string, perMinute: num
     const url = new URL(databaseUrl)
     const local = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(url.hostname)
     const localDevelopment = local && ['development', 'test'].includes(process.env.NODE_ENV ?? '')
-    if (!['postgres:', 'postgresql:'].includes(url.protocol) ||
+    const modes = url.searchParams.getAll('sslmode')
+    if (!['postgres:', 'postgresql:'].includes(url.protocol) || !url.hostname || /%2f/i.test(url.hostname) ||
         url.searchParams.has('host') || url.searchParams.has('hostaddr') ||
-        (!localDevelopment &&
-          (url.searchParams.getAll('sslmode').length !== 1 || url.searchParams.get('sslmode') !== 'verify-full'))) {
+        (!localDevelopment && (modes.length !== 1 || !['require', 'verify-full'].includes(modes[0])))) {
       throw new Error('HelpChat quota database requires PostgreSQL with sslmode=verify-full')
     }
+    // Accept hosted PostgreSQL URLs without delegating the meaning of "require" to the driver.
+    if (modes.length === 1 && modes[0] === 'require') url.searchParams.set('sslmode', 'verify-full')
     phase = 'connection'
     if (!pool || poolUrl !== databaseUrl) {
       if (pool) await pool.end()
-      pool = new Pool({connectionString: databaseUrl, max: 1, connectionTimeoutMillis: 3000, idleTimeoutMillis: 10000, statement_timeout: 4000, query_timeout: 5000})
+      pool = new Pool({connectionString: url.href, max: 1, connectionTimeoutMillis: 3000, idleTimeoutMillis: 10000, statement_timeout: 4000, query_timeout: 5000})
       pool.on('error', () => console.error('HelpChat quota database idle connection failed'))
       poolUrl = databaseUrl
     }

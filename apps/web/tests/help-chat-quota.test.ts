@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { reserveHelpChatRequest } from '../app/lib/help-chat-quota.server'
 
-const database = vi.hoisted(() => ({connect: vi.fn()}))
+const database = vi.hoisted(() => ({connect: vi.fn(), configure: vi.fn()}))
 vi.mock('pg', () => ({
   Pool: class {
+    constructor(options: {connectionString: string}) { database.configure(options) }
     connect = database.connect
     on() {}
+    async end() {}
   },
 }))
 
@@ -21,13 +23,25 @@ describe('HelpChat quota configuration', () => {
 
   it.each([
     'postgresql://example.test/db',
-    'postgresql://example.test/db?sslmode=require',
+    'postgresql://example.test/db?sslmode=disable',
+    'postgresql://example.test/db?sslmode=require&sslmode=verify-full',
+    'postgresql://example.test/db?sslmode=require&hostaddr=127.0.0.1',
     'postgresql://example.test/db?sslmode=verify-full&host=localhost',
     'postgresql://localhost/db',
     'https://example.test/db?sslmode=verify-full',
   ])('rejects unsafe production database configuration', async (url) => {
     vi.stubEnv('NODE_ENV', 'production')
     await expect(reserveHelpChatRequest(url, 10, 100)).rejects.toThrow('requires PostgreSQL')
+  })
+
+  it('upgrades a hosted database URL before passing it to pg without changing credentials or other options', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    database.connect.mockRejectedValueOnce(new Error('test connection stopped'))
+    const url = 'postgresql://user:p%40ss@pooled.example.test/db?sslmode=require&channel_binding=require'
+    await expect(reserveHelpChatRequest(url, 10, 100)).rejects.toThrow('test connection stopped')
+    expect(database.configure).toHaveBeenLastCalledWith(expect.objectContaining({
+      connectionString: url.replace('sslmode=require', 'sslmode=verify-full'),
+    }))
   })
 
   it('logs a safe configuration diagnosis without exposing an invalid URL', async () => {

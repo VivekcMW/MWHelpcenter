@@ -49,7 +49,7 @@ For Netlify, set runtime variables in the Netlify UI, CLI, or API with a scope t
 | `ANTHROPIC_API_KEY` | Empty | Optional server-only key for HelpChat AI answers. The chat sends user questions and selected published article excerpts to Anthropic; never expose or commit this key. |
 | `HELP_CHAT_ENABLED` | `false` | Set to `true` only after configuring the key, shared quota, and abuse controls. A disabled or unconfigured chat returns an unavailable message. |
 | `HELP_CHAT_METRICS` | `false` | When enabled, log per-request outcome, locale, duration, provider/tool-call counts, token usage and citation count; never chat text or source content. Follow the host's log retention policy. |
-| `HELP_CHAT_DATABASE_URL` | Empty | Server-only PostgreSQL connection URL for the shared HelpChat quota. A missing, inaccessible, or unprovisioned database makes chat unavailable. TLS `sslmode=verify-full` is required except for localhost in development or tests. |
+| `HELP_CHAT_DATABASE_URL` | Empty | Server-only PostgreSQL connection URL for the shared HelpChat quota. A missing, inaccessible, or unprovisioned database makes chat unavailable. Except for local development/test connections, specify exactly one `sslmode=verify-full` or `sslmode=require`; the app upgrades `require` to `verify-full` before connecting. |
 | `HELP_CHAT_REQUESTS_PER_MINUTE` | `1000` | Global fixed UTC-minute request quota shared across instances. |
 | `HELP_CHAT_REQUESTS_PER_DAY` | `10000` | Global fixed UTC-day request quota shared across instances. |
 | `SUPPORT_EMAIL` | Empty | Optional approved public support email; blank displays a pending-configuration message |
