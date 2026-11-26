@@ -10,6 +10,9 @@ const schema = z.object({
   SANITY_DATASET: z.string().regex(/^[a-z0-9_-]+$/).default('development'),
   SANITY_API_VERSION: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).default('2025-02-19'),
   SANITY_READ_TOKEN: z.string().default(''),
+  ANTHROPIC_API_KEY: z.string().default(''),
+  HELP_CHAT_ENABLED: z.enum(['true', 'false']).default('true'),
+  HELP_CHAT_METRICS: z.enum(['true', 'false']).default('false'),
   SUPPORT_EMAIL: z.union([z.email(), z.literal('')]).default(''),
 }).superRefine((env, ctx) => {
   if (env.CONTENT_MODE === 'sanity' && !/^[a-z0-9]+$/.test(env.SANITY_PROJECT_ID)) {

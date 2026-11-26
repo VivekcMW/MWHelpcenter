@@ -44,6 +44,9 @@ Studio's CLI reads existing shell values first, then its app `.env`, then the ro
 | `SANITY_DATASET` | `helpcenterdevelopment` for production | Real dataset to read; accepted syntax is lowercase letters/digits/underscores/hyphens |
 | `SANITY_API_VERSION` | `2025-02-19` | Pinned API date (`YYYY-MM-DD`), not a token or dataset version |
 | `SANITY_READ_TOKEN` | Empty | Optional server-only least-privilege read token when dataset access requires it; no write/preview credential in client code |
+| `ANTHROPIC_API_KEY` | Empty | Optional server-only key for HelpChat AI answers. The chat sends user questions and selected published article excerpts to Anthropic; never expose or commit this key. |
+| `HELP_CHAT_ENABLED` | `true` | Set to `false` to disable the AI endpoint without removing the key. A disabled or unconfigured chat returns an unavailable message. |
+| `HELP_CHAT_METRICS` | `false` | When enabled, log per-request outcome, locale, duration, provider/tool-call counts, token usage and citation count; never chat text or source content. Follow the host's log retention policy. |
 | `SUPPORT_EMAIL` | Empty | Optional approved public support email; blank displays a pending-configuration message |
 | `FEEDBACK_DB_PATH` | Unset | Sanity helpfulness disabled unless explicitly set; demo falls back to `data/helpfulness-demo.sqlite` relative to cwd. Use an absolute file path inside a dedicated PRIVATE local persistent directory for production. Never public/shared/network/serverless ephemeral storage. |
 
@@ -83,6 +86,10 @@ The [helpfulness guide](helpfulness.md) details the success-only 30-day cookie, 
 
 - Sanity content fetching is server-only. The client uses `perspective: 'published'`, `useCdn: false`, a 10-second timeout, and one retry. Public GROQ queries also exclude draft/version IDs and whitelist fields at every nested level.
 - A read token must stay in the server environment, never loader data, browser bundles, URLs, or logs. Published reader content is public even if the underlying dataset requires a server token.
+- HelpChat uses Anthropic's Messages API only on the server and searches the published locale catalog before answering. It provides bounded relevant excerpts, validates source IDs returned by the model, and links only cited guides. Citation validation does not guarantee that a claim is supported; review answers against source content.
+- Chat history is held in the browser while the component is mounted; up to two previous exchanges are sent with the next question. The support link places the last three questions in an editable draft in browser navigation state, not the page URL. Opening an email app requires a separate user action and does not send an email automatically.
+- Requests are bounded but there is no shared chat rate limiter or application spending cap. Configure platform-level rate limiting/abuse protection, provider budget alerts, and usage monitoring before enabling this endpoint for unrestricted public production traffic. Until then, limit access to a controlled pilot or set `HELP_CHAT_ENABLED=false`.
+- Optional chat metrics cover server responses after validation, not every incoming/rejected request. Token counts are provider-reported input/output values, not billing totals; use provider-side usage and billing for cost monitoring. There is no resolution-rate tracking or satisfaction collection for chat.
 - Explicit projections limit what the web serializes; they do not change dataset permissions or prevent direct API access permitted by the actual Sanity access model. Configure dataset visibility and memberships deliberately.
 - Studio validators are editorial guardrails, not authorization. Review the real provider roles and prevent confidential records from being placed in public content fields.
 - React renders text without raw HTML injection. Link protocols and image hosts are checked in the renderer; unsupported images are omitted. Review imported URLs and assets rather than relying solely on authoring validation.

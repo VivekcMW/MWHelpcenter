@@ -11,7 +11,7 @@ export default [
     route('collections/:slug', 'routes/collection.tsx'),
     route('articles/:slug', 'routes/article.tsx'),
     route('search', 'routes/search.tsx'),
-    route('chat-search', 'routes/resources/chat-search.ts'),
+    route('chat', 'routes/resources/chat.ts'),
     route('support', 'routes/support.tsx'),
     route('*', 'routes/not-found.tsx'),
   ]),
