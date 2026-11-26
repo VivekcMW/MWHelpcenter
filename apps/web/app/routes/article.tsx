@@ -2,7 +2,7 @@ import { data, Link, redirect, useLoaderData, type ActionFunctionArgs, type Head
 import { useTranslation } from 'react-i18next'
 import { ArrowUpRight, ChevronRight } from 'lucide-react'
 import { requireLocale, localePath, formatDate } from '../i18n/config'
-import { createI18n } from '../i18n/instance'
+import { PAGE_TITLE } from '../lib/site-meta'
 import { getArticle, getArticleRedirect, getCatalog } from '../lib/content.server'
 import { RichContent, contentHeadings } from '../components/content/rich-content'
 import { ArticleList } from '../components/ui/article-list'
@@ -50,9 +50,8 @@ export const headers: HeadersFunction = ({ parentHeaders, loaderHeaders, actionH
   return result
 }
 export const meta: MetaFunction<typeof loader> = ({ loaderData: data }) => {
-  const siteTitle = createI18n(data?.locale ?? 'en').t('siteTitle')
   return [
-    { title: data?.article.seo?.title || (data ? `${data.article.title} | ${siteTitle}` : siteTitle) },
+    { title: PAGE_TITLE },
     { name: 'description', content: data?.article.seo?.description || data?.article.summary || '' },
   ]
 }

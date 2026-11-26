@@ -2,7 +2,7 @@ import { Link, redirect, useLoaderData, type LoaderFunctionArgs, type MetaFuncti
 import { useTranslation } from 'react-i18next'
 import { ChevronRight } from 'lucide-react'
 import { requireLocale, localePath } from '../i18n/config'
-import { createI18n } from '../i18n/instance'
+import { PAGE_TITLE } from '../lib/site-meta'
 import { getCatalog } from '../lib/content.server'
 import { ArticleList } from '../components/ui/article-list'
 
@@ -19,8 +19,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
   return { locale, collection, articles: catalog.articles.filter((item) => item.collectionSlug === collection.slug || item.additionalCollectionSlugs?.includes(collection.slug)) }
 }
 export const meta: MetaFunction<typeof loader> = ({ loaderData: data }) => {
-  const siteTitle = createI18n(data?.locale ?? 'en').t('siteTitle')
-  return [{ title: data ? `${data.collection.title} | ${siteTitle}` : siteTitle }, { name: 'description', content: data?.collection.description ?? '' }]
+  return [{ title: PAGE_TITLE }, { name: 'description', content: data?.collection.description ?? '' }]
 }
 export default function CollectionPage() {
   const { locale, collection, articles } = useLoaderData<typeof loader>()

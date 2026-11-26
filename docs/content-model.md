@@ -34,7 +34,7 @@ Product pages show up to three starting guides drawn from articles in the `getti
 - Article `translationGroupId` is a stable identifier shared across translated documents, not a slug or reference. Language switching requires a unique published target-language counterpart and uses its own slug; it does not assume matching article slugs. Although required by Studio, the field is optional in the public detail type. Translation completeness is not automatically enforced.
 - Localized products and collections use the same stable ASCII slug across languages. Switching checks that the target catalog contains the document. Missing translations lead to the selected locale's root with `?translation=unavailable` and a localized notice, not English content.
 - `reviewedAt` is shown as the public last-reviewed date when present. `firstPublishedAt` is editor-maintained, not automatically populated, and is **not** currently projected or rendered.
-- `seo.title` and `seo.description` override article metadata; absent values fall back to the article title and summary. Schema limits are 70 and 170 characters respectively.
+- Article `seo.description` overrides the meta description, which otherwise falls back to the summary. `seo.title` is retained in content but is not used for the browser title; every page uses `Moving Walls | Helpcenter`. Schema limits are 70 and 170 characters respectively.
 - Editorial validation is not access control. Never place confidential material in public body text, summaries, image metadata, or public profile fields. No internal notes belong in public documentation.
 
 ## Rich content → renderer mapping

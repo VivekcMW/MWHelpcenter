@@ -2,7 +2,7 @@ import { Link, useLoaderData, type LoaderFunctionArgs, type MetaFunction } from 
 import { useTranslation } from 'react-i18next'
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import { requireLocale, localePath } from '../i18n/config'
-import { createI18n } from '../i18n/instance'
+import { PAGE_TITLE } from '../lib/site-meta'
 import { getCatalog } from '../lib/content.server'
 import { SearchForm } from '../components/ui/search-form'
 import { ArticleList } from '../components/ui/article-list'
@@ -17,8 +17,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
   return { locale, product, products: catalog.products, articles, startingGuides: startingGuides(articles), collections: catalog.collections.filter((item) => item.productSlug === product.slug) }
 }
 export const meta: MetaFunction<typeof loader> = ({ loaderData: data }) => {
-  const siteTitle = createI18n(data?.locale ?? 'en').t('siteTitle')
-  return [{ title: data ? `${data.product.title} | ${siteTitle}` : siteTitle }, { name: 'description', content: data?.product.description ?? '' }]
+  return [{ title: PAGE_TITLE }, { name: 'description', content: data?.product.description ?? '' }]
 }
 
 export default function ProductPage() {

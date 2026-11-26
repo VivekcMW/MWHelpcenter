@@ -22,7 +22,7 @@ in `instance.ts`; it is not fetched lazily from a translation service.
 
 The i18next `fallbackLng: 'en'` setting is a UI resource fallback, **not permission to accept unsupported URL locales or substitute English CMS documents**. `content.server.ts` selects the requested locale's demo catalog or language-filtered CMS content; it never fills missing Japanese content with English documents.
 
-The HTML language and direction follow the selected locale. Japanese uses self-hosted Noto Sans JP Variable alongside Poppins; see the [design system](design-system.md). Page metadata uses localized UI resources, including the site-title suffix on product, collection, and article pages. An article's explicit SEO title and description still take precedence.
+The HTML language and direction follow the selected locale. Japanese uses self-hosted Noto Sans JP Variable alongside Poppins; see the [design system](design-system.md). Every page uses the browser title `Moving Walls | Helpcenter`, including pages with a CMS SEO title. Descriptions remain localized or CMS-managed; an article's explicit SEO description takes precedence.
 
 ## Language dropdown and destinations
 

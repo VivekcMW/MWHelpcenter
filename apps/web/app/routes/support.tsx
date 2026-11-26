@@ -3,14 +3,14 @@ import { useLoaderData, useLocation, type LoaderFunctionArgs, type MetaFunction 
 import { useTranslation } from 'react-i18next'
 import { ArrowUpRight } from 'lucide-react'
 import { requireLocale } from '../i18n/config'
-import { createI18n } from '../i18n/instance'
+import { PAGE_TITLE } from '../lib/site-meta'
 import { getEnv } from '../lib/env.server'
 
 export function loader({ params }: LoaderFunctionArgs) {
   const locale = requireLocale(params.locale)
   return { locale, supportEmail: getEnv().SUPPORT_EMAIL }
 }
-export const meta: MetaFunction<typeof loader> = ({ loaderData: data }) => [{ title: `${createI18n(data?.locale ?? 'en').t('contactSupport')} | Moving Walls` }]
+export const meta: MetaFunction<typeof loader> = () => [{ title: PAGE_TITLE }]
 export default function SupportPage() {
   const { supportEmail } = useLoaderData<typeof loader>()
   const { t } = useTranslation()

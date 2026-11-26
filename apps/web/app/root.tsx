@@ -5,6 +5,7 @@ import { createI18n } from './i18n/instance'
 import { defaultLocale, isLocale, localeFromPath, localePath, locales } from './i18n/config'
 import { getEnv } from './lib/env.server'
 import { getSiteSettings } from './lib/content.server'
+import { PAGE_TITLE } from './lib/site-meta'
 import { SiteShell } from './components/layout/site-shell'
 import { LanguageSwitcher } from './components/ui/language-switcher'
 import { FeedbackToaster } from './components/ui/toaster'
@@ -33,7 +34,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export const meta: MetaFunction<typeof loader> = ({loaderData: data}) => {
   const t = createI18n(data?.locale ?? defaultLocale).t
   return [
-    {title: data?.siteSettings?.title || t('siteTitle')},
+    {title: PAGE_TITLE},
     {name: 'description', content: data?.siteSettings?.description || t('siteDescription')},
   ]
 }

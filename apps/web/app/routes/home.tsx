@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight, BookOpen, ChartNoAxesCombined, LayoutGrid, Li
 import { getCatalog, getHomePage } from '../lib/content.server'
 import { requireLocale, localePath } from '../i18n/config'
 import { createI18n } from '../i18n/instance'
+import { PAGE_TITLE } from '../lib/site-meta'
 import { SearchForm } from '../components/ui/search-form'
 import { ArticleList } from '../components/ui/article-list'
 
@@ -15,7 +16,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export const meta: MetaFunction<typeof loader> = ({ loaderData: data }) => {
   const t = createI18n(data?.locale ?? 'en').t
   return [
-    {title: data?.homePage?.seo?.title || t('siteTitle')},
+    {title: PAGE_TITLE},
     {name: 'description', content: data?.homePage?.seo?.description || data?.homePage?.heroDescription || t('siteDescription')},
   ]
 }

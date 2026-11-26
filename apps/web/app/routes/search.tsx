@@ -6,7 +6,7 @@ import { searchArticles } from '../features/search/rank'
 import { MAX_QUERY_LENGTH, queryTerms } from '../features/search/text'
 import { SearchForm } from '../components/ui/search-form'
 import { ArticleList } from '../components/ui/article-list'
-import { createI18n } from '../i18n/instance'
+import { PAGE_TITLE } from '../lib/site-meta'
 import { ResultsSkeleton } from '../components/ui/loading-feedback'
 import { Spinner } from '../components/ui/spinner'
 
@@ -24,7 +24,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const results = searchable ? searchArticles(articles, query, product, locale) : []
   return { locale, query: query.slice(0, MAX_QUERY_LENGTH + 1), product, products, results, tooLong, gettingStartedPath, typoUsed: results.some((item) => item.typo) }
 }
-export const meta: MetaFunction<typeof loader> = ({ loaderData: data }) => [{ title: `${createI18n(data?.locale ?? 'en').t('title', { ns: 'search' })} | Moving Walls` }]
+export const meta: MetaFunction<typeof loader> = () => [{ title: PAGE_TITLE }]
 
 export default function SearchPage() {
   const { locale, query, product, products, results, tooLong, gettingStartedPath, typoUsed } = useLoaderData<typeof loader>()
