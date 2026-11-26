@@ -50,6 +50,12 @@ const answerSchema = z.object({
   }).strict()).max(3),
 }).strict()
 
+function unverifiedAnswer(locale: 'en' | 'ja') {
+  return locale === 'ja'
+    ? 'ガイドから回答を確認できませんでした。近い内容のガイドを確認するか、詳しい状況を教えてください。'
+    : 'I could not verify an answer in the guides. You can review these related guides or share more details.'
+}
+
 function respond(result: ChatResponse, status: number) {
   return Response.json(result, {status, headers: {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'}})
 }
@@ -210,7 +216,13 @@ export async function action({request, params}: ActionFunctionArgs) {
       if (!toolCalls.length) {
         const text = blocks.filter((block) => block.type === 'text' && typeof block.text === 'string').map((block) => block.text).join('').trim()
         let value: unknown
-        try { value = JSON.parse(text) } catch { throw new Error('provider_invalid_answer_json') }
+        try {
+          value = JSON.parse(text)
+        } catch {
+          metrics.outcome = 'clarify'
+          metrics.citedSources = sources.size
+          return respond({ok: true, answer: unverifiedAnswer(locale), sources: [...sources.values()]}, 200)
+        }
         const result = answerSchema.safeParse(value)
         if (!result.success || (result.data.kind === 'answer' && !result.data.quotes.length) || (result.data.kind === 'clarify' && result.data.quotes.length)) throw new Error('provider_invalid_answer_schema')
         if (result.data.quotes.some(({source, text}) => !excerpts.get(source)?.some((excerpt) => excerpt.includes(text)))) throw new Error('provider_unsupported_quote')

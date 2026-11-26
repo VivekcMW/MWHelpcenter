@@ -7,10 +7,10 @@ const quota = vi.hoisted(() => ({reserveHelpChatRequest: vi.fn()}))
 vi.mock('../app/lib/content.server', () => content)
 vi.mock('../app/lib/help-chat-quota.server', () => quota)
 
-function request(body: string, headers: HeadersInit = {}): ActionFunctionArgs {
-  const url = new URL('https://help.test/en/chat')
+function request(body: string, headers: HeadersInit = {}, locale = 'en'): ActionFunctionArgs {
+  const url = new URL(`https://help.test/${locale}/chat`)
   return {
-    url, params: {locale: 'en'}, context: {}, pattern: '/:locale/chat',
+    url, params: {locale}, context: {}, pattern: '/:locale/chat',
     request: new Request(url, {method: 'POST', headers: {origin: url.origin, 'content-type': 'application/json', ...headers}, body}),
   }
 }
@@ -119,7 +119,6 @@ describe('help chat assistant endpoint', () => {
     JSON.stringify({kind: 'answer', quotes: []}),
     JSON.stringify({kind: 'answer', quotes: [{source: 's9', text: 'Invented answer'}]}),
     JSON.stringify({kind: 'answer', quotes: [{source: 's1', text: 'Check the VPN and firewall.'}]}),
-    'not valid JSON',
   ])('rejects invalid or unsupported source references', async (text) => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(globalThis, 'fetch')
@@ -127,6 +126,29 @@ describe('help chat assistant endpoint', () => {
       .mockResolvedValueOnce(providerResponse([{type: 'text', text}]))
     const response = await action(request(JSON.stringify({messages: [{role: 'user', content: 'inventory'}]})))
     expect(response.status).toBe(503)
+  })
+
+  it('gracefully offers verified guide links when the provider reply is malformed', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(providerResponse([{type: 'tool_use', id: 'tool-1', name: 'search_articles', input: {query: 'inventory'}}]))
+      .mockResolvedValueOnce(providerResponse([{type: 'text', text: 'not valid JSON'}]))
+    const response = await action(request(JSON.stringify({messages: [{role: 'user', content: 'inventory'}]})))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      ok: true,
+      answer: 'I could not verify an answer in the guides. You can review these related guides or share more details.',
+      sources: [{title: 'Inventory guide', slug: 'inventory-guide', summary: 'Set up your inventory.'}],
+    })
+  })
+
+  it('provides a localized graceful clarification for malformed Japanese replies', async () => {
+    const args = request(JSON.stringify({messages: [{role: 'user', content: '在庫'}]}), {}, 'ja')
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(providerResponse([{type: 'tool_use', id: 'tool-1', name: 'search_articles', input: {query: 'inventory'}}]))
+      .mockResolvedValueOnce(providerResponse([{type: 'text', text: 'not valid JSON'}]))
+    const response = await action(args)
+    expect(response.status).toBe(200)
+    expect((await response.json()).answer).toBe('ガイドから回答を確認できませんでした。近い内容のガイドを確認するか、詳しい状況を教えてください。')
   })
 
   it.each([
@@ -208,13 +230,16 @@ describe('help chat assistant endpoint', () => {
   })
 
   it.each([
-    {content: [], stop_reason: 'end_turn'},
-    {content: [{type: 'thinking'}], stop_reason: 'end_turn'},
-    {content: [{type: 'text', text: '{"kind":"answer"'}], stop_reason: 'max_tokens'},
-  ])('fails explicitly on incomplete provider output', async (body) => {
+    [{content: [], stop_reason: 'end_turn'}, 200],
+    [{content: [{type: 'thinking'}], stop_reason: 'end_turn'}, 200],
+    [{content: [{type: 'text', text: '{"kind":"answer"'}], stop_reason: 'max_tokens'}, 503],
+  ])('handles incomplete provider output without inventing answer text', async (body, expectedStatus) => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), {status: 200}))
     const response = await action(request(JSON.stringify({messages: [{role: 'user', content: 'inventory'}]})))
-    expect(response.status).toBe(503)
+    expect(response.status).toBe(expectedStatus)
+    if (expectedStatus === 200) {
+      expect((await response.json()).answer).toBe('I could not verify an answer in the guides. You can review these related guides or share more details.')
+    }
   })
 })
